@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {zoneEvents,heatmap}=require('../walkflows/hypothesis_analytics.js');
+const {zoneEvents,heatmap,movementDirection}=require('../walkflows/hypothesis_analytics.js');
 const sample=(frame,x,y=1,status='research_candidate')=>({frame,x:status==='spatial_conflict'?null:x,y:status==='spatial_conflict'?null:y,status});
 const h={id:'a',samples:[sample(0,.2),sample(1,.3),sample(2,1.2),sample(3,0,0,'spatial_conflict'),sample(4,1.3),sample(5,1.4)]};
 const grid=heatmap([h],[0,0,2,2],{columns:2,rows:1,fps:2});
@@ -38,3 +38,11 @@ const route=researchRoute(h,zones,{margin:0,minDuration:0,maxInterval:.6,fps:2})
 assert.deepEqual(route.map(x=>[x.kind,x.frame,x.items.length]),[['candidates',0,2],['candidates',2,2],['gap',4,0]]);
 assert.throws(()=>researchRoute(h,[zones[0],zones[0]],{margin:0,minDuration:0,maxInterval:.6,fps:2}));
 console.log('hypothesis analytics tests passed');
+
+// Movement direction is derived only from contiguous valid samples.
+const movementTrack={id:'motion',samples:Array.from({length:6},(_,frame)=>({frame,status:'research_candidate',x:frame*.1,y:0}))};
+assert.deepEqual(movementDirection(movementTrack,5,{intervals:5,minDisplacement:.1}),{start_frame:0,end_frame:5,dx:.5,dy:0,distance:.5,unit_x:1,unit_y:0});
+assert.equal(movementDirection(movementTrack,4,{intervals:5,minDisplacement:.1}),null);
+assert.equal(movementDirection({...movementTrack,samples:movementTrack.samples.filter(s=>s.frame!==3)},5,{intervals:5,minDisplacement:.1}),null);
+assert.equal(movementDirection({...movementTrack,samples:movementTrack.samples.map(s=>({...s,x:0}))},5,{intervals:5,minDisplacement:.1}),null);
+assert.equal(movementDirection({...movementTrack,samples:movementTrack.samples.map(s=>s.frame===3?{...s,status:'spatial_conflict',x:null,y:null}:s)},5,{intervals:5,minDisplacement:.1}),null);

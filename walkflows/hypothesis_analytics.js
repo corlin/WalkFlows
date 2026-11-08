@@ -14,6 +14,13 @@
    last=s.frame;
   }
  }
+ function movementDirection(h,frame,options){
+  validSamples(h);if(!Number.isSafeInteger(frame)||frame<0||!options||!Number.isSafeInteger(options.intervals)||options.intervals<1||!Number.isFinite(options.minDisplacement)||options.minDisplacement<=0)throw Error('invalid movement settings');
+  const end=h.samples.findIndex(s=>s.frame===frame),start=end-options.intervals;if(start<0)return null;const segment=h.samples.slice(start,end+1);
+  if(segment.some((s,i)=>s.status!=='research_candidate'||s.frame!==frame-options.intervals+i))return null;
+  const dx=segment[segment.length-1].x-segment[0].x,dy=segment[segment.length-1].y-segment[0].y,distance=Math.hypot(dx,dy);if(distance<options.minDisplacement)return null;
+  return {start_frame:segment[0].frame,end_frame:frame,dx,dy,distance,unit_x:dx/distance,unit_y:dy/distance};
+ }
  function referenceTracks(reference,frameCount){
   if(!reference||typeof reference!=='object'||Array.isArray(reference)||!Number.isSafeInteger(frameCount)||frameCount<1)throw Error('invalid reference');
   const tracks=new Map();
@@ -83,5 +90,5 @@
   const maps=heatmap(data.hypotheses,data.bounds,settings),areas=safeLayout.items.map(zone=>({zone_id:zone.id,...summarizeArea(data.hypotheses,zone,settings)}));
   return structuredClone({schema_version:1,scope:data.research_metadata.analysis_source==='experimental_direct_pose'?'experimental_direct_pose_not_validated_customer_counts':data.research_metadata.analysis_source==='published_reference'?'published_reference_not_validated_customer_counts':data.research_metadata.analysis_source==='experimental_linked'?'experimental_linked_not_validated_customer_counts':'unverified_research_hypotheses_not_customer_counts',source:data.research_metadata,scene:data.scene,bounds:data.bounds,layout:safeLayout,settings,hypotheses:data.hypotheses,areas,routes:data.hypotheses.map(h=>({id:h.id,events:researchRoute(h,safeLayout.items,settings)})),heatmaps:maps});
  }
- return {referenceTracks,sliceHypotheses,zoneEvents,summarizeArea,heatmap,researchRoute,createResearchReport};
+ return {movementDirection,referenceTracks,sliceHypotheses,zoneEvents,summarizeArea,heatmap,researchRoute,createResearchReport};
 });

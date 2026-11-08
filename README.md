@@ -62,6 +62,8 @@ node scripts/compare_site03_direct_pose_events.js
 - [实施路线与验收原则](desc/04-roadmap.md)
 - [文档索引](desc/README.md)
 - [跨场景姿态实验](desc/66-direct-pose-cross-scene.md)
+- [训练方向和数据清单](desc/69-training-direction.md)
+- [轨迹与行进方向](desc/71-motion-direction.md)
 
 常规复现入口为 .venv/bin/python -m walkflows prepare --cross-scene；它检查固定输入，运行或复用经过校验的缓存，并执行 Python 与 JavaScript 检查。验证报告和日志位于 data/processed/site03-verification/ 和 data/processed/local-pipeline/。通过这些检查仅说明当前研究链可复现，不等于完成全项目验收。
 
