@@ -1,0 +1,9 @@
+# Interrupted region-change evidence
+
+The local page adds a clearly labeled experimental local-tracklet-linked source from document 55. It does not replace the default model hypotheses. The source can produce wrong merges; its artifact hash and distinct experimental scope are included in research exports. The fixed baseline-versus-reference comparison remains based on the original model hypotheses.
+
+The transition summary now separately lists interrupted evidence when a single unambiguous region exit is followed by one or more observation gaps and a later `resumed_inside` confirmation in a different region within the window. The exit frame, resumed frame, gap-resumption frames and hypothesis ID are retained. The page can jump to the resumed frame. Interrupted evidence is not included in transition counts or funnel steps and does not imply that the two observations are physically connected. Multiple simultaneous destinations, overlap, same-frame ambiguity and timeouts remain unresolved.
+
+For the example regions in document 53, the experimental linked pose track leaves the north region at frame 102, has gap-resumption frames 108, 116 and 124, then is confirmed inside the south region at frame 127. It yields one interrupted clue and zero uninterrupted transition candidates. The reference path gives different confirmation frames (99 and 114). The link itself is based on overlapping boxes, so this is a review lead, not an identity or tracking-accuracy result.
+
+The full verifier checks source hashes and tests gap/no-gap distinction, ambiguity and timeouts, as well as this fixed-sample example. Browser inspection confirmed the experimental source can be selected and displays its constituent local IDs; no layout was altered. Source selection, current frame range and the distinction between interrupted and uninterrupted evidence are retained in export data.

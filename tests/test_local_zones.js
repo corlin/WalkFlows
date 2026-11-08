@@ -1,0 +1,15 @@
+const assert = require("node:assert/strict");
+const {validateZone, referenceEvents} = require("../walkflows/local_zones.js");
+const z={x1:0,y1:0,x2:2,y2:2};
+assert.equal(validateZone(z,[0,0,5,5]),true);
+assert.equal(validateZone({x1:0,y1:0,x2:0,y2:2},[0,0,5,5]),false);
+assert.equal(validateZone({x1:-1,y1:0,x2:2,y2:2},[0,0,5,5]),false);
+assert.equal(validateZone({x1:NaN,y1:0,x2:2,y2:2},[0,0,5,5]),false);
+const point=(frame,x,y)=>({clip_frame:String(frame),relative_s:String(frame/15),floor_x:String(x),floor_y:String(y)});
+let events=referenceEvents([point(0,1,1),point(1,1,1),point(2,3,3)],z);
+assert.deepEqual(events.map(e=>e.kind),["initial_inside","exit_candidate"]);
+events=referenceEvents([point(0,3,3),point(1,2,1),point(4,1,1),point(5,3,3)],z);
+assert.deepEqual(events.map(e=>e.kind),["enter_candidate","gap","resumed_inside","exit_candidate"]);
+assert.throws(()=>referenceEvents([point(1,1,1),point(1,1,1)],z));
+assert.throws(()=>referenceEvents([point(0,1,1),{...point(1,1,1),relative_s:"nan"}],z));
+console.log("reference zone tests passed");

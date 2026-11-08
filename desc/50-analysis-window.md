@@ -1,0 +1,7 @@
+# Time-window analysis for site03
+
+The research page supports an inclusive start/end frame window for the hypothesis heatmaps, zone summaries, local track events, research journeys and funnel. The video and reference-proximity review remain available over the full clip. Applying a new window invalidates the previous funnel; it must be recalculated. Invalid, nonintegral, empty, reversed or out-of-range inputs are rejected and leave the last applied window in effect.
+
+Samples are sliced before analysis, without adding observations at the boundary. A track first seen inside a zone in the selected window is reported as initially observed inside, not as a confirmed entry. Missing frames and spatial conflicts continue to interrupt observed intervals. Hypotheses with no samples in the window remain in the export for provenance but contribute no observations or funnel steps. The research export includes the window's start/end frame and fps in source metadata, with the included sample frames; the original source hypothesis hash is retained.
+
+The page was checked with frames 100?200 and with a rejected 300?100 range. Automated checks cover inclusive boundaries, empty windows, input rejection, initial-inside semantics, conflict gaps, heatmap counts and exported window metadata. The short fixed sample permits comparison within this clip; it does not supply wall-clock dates or representative business periods. Counts remain unverified research hypotheses rather than deduplicated customer counts.

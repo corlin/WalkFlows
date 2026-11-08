@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const {createReport}=require('../walkflows/track_events.js');
+const o={camera:'a',local_id:1,frame:0,timestamp_s:0,xy:[1,1],status:'research_candidate_only',quality:{inside_hull:true,in_scene:true,forward_ray:true,duplicate_candidate:false,floor_validated:false,foot_visibility:'unknown',sync_validated:false},reasons:['floor_unvalidated','foot_visibility_unknown','sync_unvalidated'],source_sha256:'sha'};
+const zone={id:'x',name:'X',type:'zone',x1:0,y1:0,x2:2,y2:2};
+const opt={margin:0.1,minDuration:0,maxInterval:0.11};
+const r=createReport([o],zone,opt,'research',{scene:'test',revision:3});
+assert.equal(r.scope,'camera_local_research');assert.equal(r.analysis.events[0].kind,'initial_inside');
+assert.equal(r.layout.revision,3);assert.equal(r.observations[0].source_sha256,'sha');
+o.xy[0]=9;zone.name='changed';assert.equal(r.observations[0].xy[0],1);assert.equal(r.zone.name,'X');
+assert.throws(()=>createReport([o],zone,opt,'research',{scene:'test',revision:0}));
+console.log('track report tests passed');

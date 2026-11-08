@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const {referenceRoute}=require('../walkflows/local_zones.js');
+const p=(f,x)=>({clip_frame:f,relative_s:f/10,floor_x:x,floor_y:1});
+const regions=[{id:'a',name:'A',type:'zone',x1:0,y1:0,x2:2,y2:2},{id:'b',name:'B',type:'point',x1:0,y1:0,x2:2,y2:2}];
+const route=referenceRoute([p(0,-1),p(1,-1),p(2,-1),p(3,1),p(4,1),p(5,1),p(8,1),p(9,1),p(10,1)],regions,{margin:0.2,minDuration:0.2,maxInterval:0.11});
+assert.deepEqual(route.map(x=>[x.kind,x.frame,x.items.map(y=>y.id)]),[['candidates',5,['a','b']],['gap',8,[]],['candidates',10,['a','b']]]);
+assert.deepEqual(route[0].items.map(x=>x.kind),['enter_candidate','enter_candidate']);
+assert.deepEqual(route[2].items.map(x=>x.kind),['resumed_inside','resumed_inside']);
+assert.deepEqual(referenceRoute([],[],{margin:0.2,minDuration:0.2,maxInterval:0.11}),[]);
+assert.throws(()=>referenceRoute([], [regions[0],regions[0]], {margin:0.2,minDuration:0.2,maxInterval:0.11}));
+console.log('reference route tests passed');

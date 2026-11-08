@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict');
+const {trackZoneEvents}=require('../walkflows/site03_events.js');
+const zone={x1:0,y1:0,x2:2,y2:2},opt={margin:.2,minDuration:.2,maxInterval:.11,fps:10};
+const row=(frame,x,valid=true)=>({frame,id:1,x,y:1,research_geometry_candidate:valid,pose_x:x,pose_y:1,pose_candidate:valid});
+let all=[row(0,-1),row(1,-1),row(2,-1),row(3,1,false),row(4,1),row(5,1),row(6,1)];
+let out=trackZoneEvents(all,1,'pose',zone,opt);
+assert.equal(out.total,7);assert.equal(out.selected,6);assert.deepEqual(out.events.map(e=>e.kind),['gap','resumed_inside']);
+assert.throws(()=>trackZoneEvents([row(0,1),row(0,1)],1,'box',zone,opt));
+assert.throws(()=>trackZoneEvents(all,1,'unknown',zone,opt));
+assert.equal(trackZoneEvents(all,2,'box',zone,opt).total,0);
+const hybridRows=all.map((x,i)=>({...x,hybrid_x:x.x,hybrid_y:x.y,hybrid_candidate:i!==3}));
+assert.deepEqual(trackZoneEvents(hybridRows,1,'hybrid',zone,opt).events.map(e=>e.kind),['gap','resumed_inside']);
+console.log('site03 local events tests passed');

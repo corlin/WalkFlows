@@ -1,0 +1,7 @@
+# Association candidate review in the local page
+
+The site03 research page now lists frames where more than one research hypothesis is assigned, through conservative per-camera spatial proximity, to the same reference point at radius 0.5. Click a row to pause playback, switch the two views to source cameras, use the pose projection and seek to that frame. The row shows all source tracks as context; it does not assert that every displayed source independently matched the reference. Events may be false candidates due to projection error, occlusion, missing observations or reference uncertainty and are not a duplicate-person count.
+
+The build checks the diagnostic reference and hypothesis hashes and resolves each event back to actual frame-specific hypothesis sources; incomplete or stale inputs fail the build. The default verifier rebuilds the diagnostic before the page. The page does not change the hypotheses, layout, research funnel or metric results. On the fixed sample there are 20 candidate reference-frame pairs, including frame 183 from the previously investigated fragmented tracks.
+
+Browser check: clicking frame 183 changed the frame to 183 (12.20 s), selected C0001056_v2 and C0001055_v4 and switched to pose projection. Python tests cover invalid/missing event sources; the existing integration test checks event count, provenance and source membership. None of these checks validates identity or physical position.

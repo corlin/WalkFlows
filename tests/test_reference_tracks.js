@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict');
+const a=require('../walkflows/hypothesis_analytics.js');
+const source={'0':[{id:7,x:1,y:2},{id:2,x:3,y:4}],'1':[],'2':[{id:7,x:2,y:3}]};
+const h=a.referenceTracks(source,3);
+assert.deepEqual(h.map(x=>x.id),['reference-2','reference-7']);
+assert.deepEqual(h[1].samples.map(x=>x.frame),[0,2]);
+assert.equal(h[1].samples[0].status,'research_candidate');
+assert.deepEqual(h[1].samples[0].sources,[{kind:'published_reference',id:7}]);
+assert.throws(()=>a.referenceTracks({'0':[{id:7,x:1,y:2},{id:7,x:2,y:3}]},1));
+assert.throws(()=>a.referenceTracks({'1':[{id:7,x:1,y:2}]},1));
+console.log('reference track tests passed');
+const data={scene:'test',bounds:[0,0,5,5],fps:1,hypotheses:h,research_metadata:{hypothesis_sha256:'a'.repeat(64),reference_sha256:'b'.repeat(64),analysis_source:'published_reference'}};
+const layout={schema_version:1,scene:'test',revision:1,items:[]};const exported=a.createResearchReport(data,layout,{margin:0,minDuration:0,maxInterval:1,columns:1,rows:1});
+assert.equal(exported.scope,'published_reference_not_validated_customer_counts');assert.equal(exported.source.analysis_source,'published_reference');
+const bad={...data,research_metadata:{hypothesis_sha256:'a'.repeat(64),analysis_source:'published_reference'}};
+assert.throws(()=>a.createResearchReport(bad,layout,{margin:0,minDuration:0,maxInterval:1,columns:1,rows:1}));

@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const t=require('../walkflows/zone_transitions.js');
+const i=(id,kind)=>({id,name:id,type:'zone',kind});
+const c=(frame,...items)=>({kind:'candidates',frame,time:frame,items});
+const gap=frame=>({kind:'gap',frame,time:frame,items:[]});
+const r=t.extractInterrupted([c(0,i('a','initial_inside')),c(1,i('a','exit_candidate')),gap(3),c(3,i('b','resumed_inside'))],30);
+assert.equal(r.length,1);assert.equal(r[0].from_id,'a');assert.equal(r[0].to_id,'b');assert.deepEqual(r[0].gap_resume_frames,[3]);
+assert.equal(t.extractInterrupted([c(0,i('a','initial_inside')),c(1,i('a','exit_candidate')),c(2,i('b','enter_candidate'))],30).length,0);
+assert.equal(t.extractInterrupted([c(0,i('a','initial_inside')),c(1,i('a','exit_candidate')),gap(3),c(3,i('b','resumed_inside'),i('c','resumed_inside'))],30).length,0);
+assert.equal(t.extractInterrupted([c(0,i('a','initial_inside')),c(1,i('a','exit_candidate')),gap(3),c(40,i('b','resumed_inside'))],30).length,0);
+console.log('interrupted transition tests passed');

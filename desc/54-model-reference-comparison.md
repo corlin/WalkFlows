@@ -1,0 +1,9 @@
+# Same-window model and reference comparison
+
+The local page computes model research hypotheses and published reference trajectories side by side using the same configured regions, hysteresis rules and selected frame window. It displays observed track-hypothesis counts, inside sampling seconds and region-transition candidate counts. The JSON research export includes both sides, per-track region events, transition evidence and the effective coverage window. Source hashes remain in the report metadata.
+
+Reference coverage is frames 0?398. A requested window including video frame 399 excludes that frame from both sides; a window with no reference coverage displays an explicit unavailable state. This only handles the known frame-coverage boundary: the reference may still miss a person inside the covered interval, and per-camera visibility and identity are not independently verified. The two sides have different track construction and coverage, so counts or their difference must not be interpreted as precision, recall, accuracy or confirmed customer totals.
+
+As a reproducible illustration, using the two separated north/south rectangles from document 53 over frames 0?399 gives a comparison interval of 0?398, one reference transition candidate and zero model candidates. The reference event is traceable to frames 99 and 114. This is evidence that the current model-derived research hypotheses do not produce that event under the selected rules; it does not independently determine the cause or prove a false negative. The rectangles are arbitrary and are not a store layout.
+
+Tests cover inclusive common coverage, unknown-only windows, invalid ranges, synthetic area comparisons and this real-sample case. Browser inspection verified the empty-layout presentation; event-level comparisons remain accessible in the exported research report and by selecting the corresponding source on the page. The normal full verifier rebuilds and checks the components.
