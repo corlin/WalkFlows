@@ -10,3 +10,10 @@ assert.equal(r.model.areas[0].observed_hypotheses,1);assert.equal(r.reference.ar
 assert.equal(compareSources([h('m',[2])],[h('r',[0])],zones,{start:2,end:2,referenceFrames:2},opts,analytics,trans).status,'no_reference_coverage');
 assert.throws(()=>compareSources([],[],zones,{start:2,end:1,referenceFrames:2},opts,analytics,trans));
 console.log('source comparison tests passed');
+
+const select=require('../walkflows/source_comparison.js').selectComparisonSource;
+const base=[h('base',[0])],direct=[h('direct',[0])];
+assert.deepEqual(select('baseline',base,direct,{hypothesis_sha256:'a'.repeat(64),direct_hypothesis_sha256:'b'.repeat(64)}),{hypotheses:base,source:'baseline',sha256:'a'.repeat(64)});
+assert.deepEqual(select('direct',base,direct,{hypothesis_sha256:'a'.repeat(64),direct_hypothesis_sha256:'b'.repeat(64)}),{hypotheses:direct,source:'experimental_direct_pose',sha256:'b'.repeat(64)});
+assert.throws(()=>select('direct',base,null,{hypothesis_sha256:'a'.repeat(64)}));
+assert.throws(()=>select('unknown',base,direct,{hypothesis_sha256:'a'.repeat(64)}));
