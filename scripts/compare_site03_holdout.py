@@ -64,7 +64,9 @@ for camera in ('C0001055_v4','C0001056_v2'):
   matches=[]
   for frame,points in sorted(byframe.items()):
    for m in match_positions(points,ref[frame],.5):matches.append({'frame':frame,**m})
-  methods[method]={'observations':len(rows),'duplicate_excluded':len(dups),'valid_points':sum(map(len,byframe.values())),'matched_observations':len(matches),'matched_distinct_frames':len({m['frame'] for m in matches}),'matched_by_reference':dict(Counter(m['reference_id'] for m in matches)),'median_distance':statistics.median(m['distance'] for m in matches) if matches else None,'matches':matches}
+  eligible=[{'camera':camera,'id':x['id'],'frame':x['frame'],'x':x['point'][0],'y':x['point'][1]} for x in rows if x['point'] is not None and (x['frame'],x['id']) not in dups]
+  evidence=out/(camera+'_'+method+'_floor.json');evidence.write_text(json.dumps(eligible,indent=2,allow_nan=False))
+  methods[method]={'floor_sha256':sha256(evidence),'observations':len(rows),'duplicate_excluded':len(dups),'valid_points':sum(map(len,byframe.values())),'matched_observations':len(matches),'matched_distinct_frames':len({m['frame'] for m in matches}),'matched_by_reference':dict(Counter(m['reference_id'] for m in matches)),'median_distance':statistics.median(m['distance'] for m in matches) if matches else None,'matches':matches}
   print(camera,method,{k:v for k,v in methods[method].items() if k!='matches'},flush=True)
  base={(m['frame'],m['reference_id']):m for m in methods['baseline']['matches']};direct={(m['frame'],m['reference_id']):m for m in methods['direct']['matches']};common=base.keys()&direct.keys()
  paired={'common_frame_reference_pairs':len(common),'baseline_median_distance':statistics.median(base[k]['distance'] for k in common) if common else None,'direct_median_distance':statistics.median(direct[k]['distance'] for k in common) if common else None,'direct_only_pairs':len(direct.keys()-base.keys()),'baseline_only_pairs':len(base.keys()-direct.keys())}

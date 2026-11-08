@@ -1,6 +1,6 @@
 # WalkFlows
 
-WalkFlows 是一个研究线下空间客流与匿名轨迹的离线原型。项目使用公开多摄像头录像、已有标定和位置参考，探索人员检测、单镜头跟踪、地面投影、跨镜头关联、区域事件、热图和路径分析。
+WalkFlows 是一个定位开源、非商业化的线下空间客流与匿名轨迹离线原型。项目使用公开多摄像头录像、已有标定和位置参考，探索人员检测、单镜头跟踪、地面投影、跨镜头关联、区域事件、热图和路径分析。
 
 **当前状态：研究原型，尚未完成业务验收。** 轨迹关联、位置和区域事件均为研究候选，不能直接作为去重顾客人数、真实咨询、成交或布局效果结论。公开参考的可见性和覆盖也未独立确认。
 
@@ -64,3 +64,5 @@ node scripts/compare_site03_direct_pose_events.js
 - [跨场景姿态实验](desc/66-direct-pose-cross-scene.md)
 
 常规复现入口为 .venv/bin/python -m walkflows prepare --cross-scene；它检查固定输入，运行或复用经过校验的缓存，并执行 Python 与 JavaScript 检查。验证报告和日志位于 data/processed/site03-verification/ 和 data/processed/local-pipeline/。通过这些检查仅说明当前研究链可复现，不等于完成全项目验收。
+
+用户已提出使用更多公开数据训练和优化模型；当前训练方案和独立验证仍在准备。仓库尚未添加项目代码的 LICENSE 文件，不应根据非商业化定位推定具体授权条款。

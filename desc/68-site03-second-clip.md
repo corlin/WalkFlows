@@ -20,3 +20,18 @@ Reproduce in the existing environment:
 ```
 
 The downloader retries and resumes partial files and validates published Git blob or LFS SHA-256 values before use. The ignored `data/processed/site03-007-comparison/report.json` contains each match, input hashes, versions and paired counts. The standard 006 review and baseline are not changed. This experiment provides evidence for further evaluation, not justification for accepting the direct method as a verified identity or business-counting system.
+
+## Two-camera trajectory and event follow-up
+
+The per-camera eligible floor observations are now retained as hash-checked evidence and combined with the same 0.5 unique-distance association, 10-frame/five-consecutive support and conflict rules used for the 006 research hypotheses. On 007, the two-camera baseline gives 10 hypotheses, one multi-camera hypothesis, 398 usable hypothesis-frame points and 270 reference-near position pairs. The direct model gives 12 hypotheses, one multi-camera hypothesis, 480 usable points, two conflicts and 418 reference-near pairs. Hypotheses are not verified identities; only two of six cameras participate.
+
+With the unchanged illustrative north/south rectangles, the published reference has one north-to-south candidate at frames 358 and 364. Neither the baseline nor direct hypotheses produce an uninterrupted or interrupted candidate under those rules. Thus extra position coverage does not recover this example event. This is evidence for further tracking/continuity work, not proof of an error rate or a claim about real store zones.
+
+After the three commands above, run:
+
+```sh
+.venv/bin/python scripts/evaluate_site03_holdout_journeys.py
+node scripts/compare_site03_holdout_events.js
+```
+
+The ignored experiment directory contains the inputs, hypotheses, per-frame coverage and event comparison.
