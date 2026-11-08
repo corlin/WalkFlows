@@ -24,7 +24,7 @@ try:
    report['skipped'].append(name);continue
   step(name,[sys.executable,str(root/'scripts'/name)])
  step('python-tests',[sys.executable,'-m','unittest','discover','-s','tests'])
- for name in ('test_local_zones.js','test_reference_hysteresis.js','test_reference_route.js','test_layout.js','test_layout_canvas.js','test_track_events.js','test_track_report.js','test_track_events_integration.js','test_site03_events.js','test_hypothesis_analytics.js','test_analysis_window.js','test_reference_tracks.js','test_zone_transitions.js','test_interrupted_transitions.js','test_source_comparison.js','test_site03_hypothesis_integration.js','test_research_funnel.js'):
+ for name in ('test_local_zones.js','test_reference_hysteresis.js','test_reference_route.js','test_layout.js','test_layout_canvas.js','test_example_flow_layout.js','test_track_events.js','test_track_report.js','test_track_events_integration.js','test_site03_events.js','test_hypothesis_analytics.js','test_analysis_window.js','test_reference_tracks.js','test_zone_transitions.js','test_interrupted_transitions.js','test_source_comparison.js','test_site03_hypothesis_integration.js','test_research_funnel.js'):
   if args.site03_only and name=='test_track_events_integration.js':report['skipped'].append(name);continue
   step(name,['node',str(root/'tests'/name)])
  d=json.loads((root/'data/processed/site03-review/data.json').read_text());e=json.loads((root/'data/processed/site03-reference-eval/summary.json').read_text());c=json.loads((root/'data/processed/site03-crossview/summary.json').read_text())

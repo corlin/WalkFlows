@@ -40,3 +40,6 @@ assert.ok(linkedResult.interrupted.some(e=>e.from_id==='north'&&e.to_id==='south
 const linkedData={...data,hypotheses:data.linked_hypotheses,research_metadata:{...data.research_metadata,analysis_source:'experimental_linked'}};
 const linkedReport=require('../walkflows/hypothesis_analytics.js').createResearchReport(linkedData,layout,{margin:.1,minDuration:.2,maxInterval:.1,columns:18,rows:26});
 assert.equal(linkedReport.scope,'experimental_linked_not_validated_customer_counts');assert.equal(linkedReport.source.linked_hypothesis_sha256,data.research_metadata.linked_hypothesis_sha256);
+const exampleFlow=require('../walkflows/layout.js').exampleFlow(data.scene,data.bounds);
+const demo=require('../walkflows/source_comparison.js').compareSources(data.hypotheses,published,exampleFlow.items,{start:0,end:399,referenceFrames:data.reference_frames},{fps:15,margin:.1,minDuration:.2,maxInterval:.1,transitionWindow:30},require('../walkflows/hypothesis_analytics.js'),require('../walkflows/zone_transitions.js'));
+assert.equal(demo.reference.transitions.events.length,1);assert.equal(demo.model.transitions.events.length,0);assert.equal(demo.reference.transitions.events[0].arrival_frame,114);

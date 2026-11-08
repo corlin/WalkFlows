@@ -48,6 +48,12 @@
   function migrateLegacy(zone,bounds,scene){
     return validateLayout({...emptyLayout(scene),items:[{id:'legacy',name:zone.name,type:'zone',x1:zone.x1,y1:zone.y1,x2:zone.x2,y2:zone.y2}]},bounds,scene);
   }
+  function exampleFlow(scene,bounds){
+    validateLayout(emptyLayout(scene),bounds,scene);
+    const [left,top,right,bottom]=bounds,height=bottom-top,split=top+height*6/13,gap=height*.4/13;
+    const items=[{id:'example_flow_south',name:'\u793a\u4f8b\u5357\u533a',type:'zone',x1:left,y1:top,x2:right,y2:split},{id:'example_flow_north',name:'\u793a\u4f8b\u5317\u533a',type:'zone',x1:left,y1:split+gap,x2:right,y2:bottom}];
+    return validateLayout({...emptyLayout(scene),items},bounds,scene);
+  }
   function exampleGrid(scene,bounds){
     validateLayout(emptyLayout(scene),bounds,scene);
     const [left,top,right,bottom]=bounds,mx=left/2+right/2,my=top/2+bottom/2;
@@ -55,5 +61,5 @@
     const items=rectangles.map(([x1,y1,x2,y2],index)=>({id:'example_'+(index+1),name:'\u793a\u4f8b\u533a '+(index+1),type:'zone',x1,y1,x2,y2}));
     return validateLayout({...emptyLayout(scene),items},bounds,scene);
   }
-  return {rectangleFromCanvas,emptyLayout,validateLayout,saveItem,removeItem,migrateLegacy,exampleGrid};
+  return {rectangleFromCanvas,emptyLayout,validateLayout,saveItem,removeItem,migrateLegacy,exampleFlow,exampleGrid};
 });
