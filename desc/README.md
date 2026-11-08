@@ -109,3 +109,5 @@ WalkFlows 将多摄像头人员轨迹转换为门店空间触点和客户旅程�
 - [One-click reference flow example](58-reference-flow-example.md)
 
 - [Optional YOLO11s-pose comparison](59-pose-model-comparison.md)
+
+- [Data coverage and quality in the local review](60-quality-coverage-ui.md)

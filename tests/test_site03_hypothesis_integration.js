@@ -43,3 +43,8 @@ assert.equal(linkedReport.scope,'experimental_linked_not_validated_customer_coun
 const exampleFlow=require('../walkflows/layout.js').exampleFlow(data.scene,data.bounds);
 const demo=require('../walkflows/source_comparison.js').compareSources(data.hypotheses,published,exampleFlow.items,{start:0,end:399,referenceFrames:data.reference_frames},{fps:15,margin:.1,minDuration:.2,maxInterval:.1,transitionWindow:30},require('../walkflows/hypothesis_analytics.js'),require('../walkflows/zone_transitions.js'));
 assert.equal(demo.reference.transitions.events.length,1);assert.equal(demo.model.transitions.events.length,0);assert.equal(demo.reference.transitions.events[0].arrival_frame,114);
+const quality=require('../walkflows/quality_report.js').summarize(data,{start:0,end:399},'pose');
+assert.equal(quality.cameras.reduce((n,c)=>n+c.observation_rows,0),928);
+assert.equal(quality.cameras.reduce((n,c)=>n+c.eligible_rows,0),549);
+assert.equal(quality.reference_missing_frames,1);assert.equal(quality.hypotheses.spatial_conflicts,1);
+assert.equal(quality.cameras.find(c=>c.camera==='C0001025_v1').frames_without_tracks,400);

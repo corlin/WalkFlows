@@ -20,7 +20,7 @@ def asset_specs():
 def bundle_paths():
     from scripts.fetch_site03_sample import FILES
     prefix='data/processed/site03-review/'
-    static=['index.html','data.json','layout.js','local_zones.js','site03_events.js','hypothesis_analytics.js','research_funnel.js','zone_transitions.js','source_comparison.js']
+    static=['index.html','data.json','layout.js','local_zones.js','site03_events.js','hypothesis_analytics.js','research_funnel.js','zone_transitions.js','source_comparison.js','quality_report.js']
     return [prefix+x for x in static]+[prefix+x for x in FILES if x.endswith('.mp4')]
 
 def package_versions():
