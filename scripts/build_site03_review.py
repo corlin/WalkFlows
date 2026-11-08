@@ -7,6 +7,7 @@ from walkflows.reference_eval import convert_reference
 from walkflows.association_review import review_events
 from walkflows.camera_anchors import extract_anchors
 from walkflows.crossview import local_duplicate_keys
+from walkflows.direct_pose_bundle import load_direct_pose
 raw=root/'data/raw/multiview/006_site03_tracks';floor=root/'data/processed/site03-floor-probe';tracks=root/'data/processed/site03-gpu-conf010';cross=root/'data/processed/site03-crossview';out=root/'data/processed/site03-review';out.mkdir(parents=True,exist_ok=True)
 pose=root/'data/processed/site03-pose-floor';posecross=root/'data/processed/site03-pose-proposals';hypdir=root/'data/processed/site03-hypotheses';hybrid=root/'data/processed/site03-hybrid-foot';hybridcross=root/'data/processed/site03-hybrid-proposals'
 sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
@@ -61,6 +62,9 @@ for kind,path in [('box',pairfile),('pose',pose_pairfile),('hybrid',hybrid_pairf
 scene_data=json.loads(scene.read_text());anchors=extract_anchors(scene_data)
 if {a['camera'] for a in anchors}!=set(camera_data):raise ValueError('calibration camera list mismatch')
 obj={'scene':'site03_scene03','bounds':scene_data['hist-aabb'],'camera_anchors':anchors,'cameras':camera_data,'hypotheses':hypotheses['hypotheses'],'linked_hypotheses':linked_hypotheses,'research_metadata':{'reference_sha256':sha(reference),'linked_hypothesis_sha256':sha(linked_path),'hypothesis_sha256':hyp_summary['artifact_sha256'],'inputs':hypotheses['inputs'],'scene_sha256':summary['scene_sha256'],'association_threshold':hypotheses['association_threshold'],'max_frame_spread':hypotheses['max_frame_spread'],'pose_score_threshold':pose_summary['pose_score_threshold']},'association_review':association_review,'association_review_sha256':sha(diagnostic_path),'associations':hypotheses['associations'],'pairs':pairs,'reference':reference_frames,'reference_frames':len(reference_frames),'video_frames':400,'fps':15,'scope':'experimental camera-local projections and pair candidates; no accepted identities or customer counts'}
+direct=load_direct_pose(root,sha(hyp_path),sha(reference),sha(scene))
+if direct is not None:
+ obj['direct_pose_hypotheses']=direct['hypotheses'];obj['research_metadata']['direct_hypothesis_sha256']=direct['sha256']
 tmp=out/'data.json.tmp';tmp.write_text(json.dumps(obj,allow_nan=False));os.replace(tmp,out/'data.json')
 shutil.copyfile(root/'walkflows/site03_review.html',out/'index.html')
 for name in ('layout.js','local_zones.js','site03_events.js','hypothesis_analytics.js','research_funnel.js','zone_transitions.js','source_comparison.js','quality_report.js'):shutil.copyfile(root/'walkflows'/name,out/name)

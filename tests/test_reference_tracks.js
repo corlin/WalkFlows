@@ -14,3 +14,9 @@ const layout={schema_version:1,scene:'test',revision:1,items:[]};const exported=
 assert.equal(exported.scope,'published_reference_not_validated_customer_counts');assert.equal(exported.source.analysis_source,'published_reference');
 const bad={...data,research_metadata:{hypothesis_sha256:'a'.repeat(64),analysis_source:'published_reference'}};
 assert.throws(()=>a.createResearchReport(bad,layout,{margin:0,minDuration:0,maxInterval:1,columns:1,rows:1}));
+
+const direct={...data,research_metadata:{hypothesis_sha256:'a'.repeat(64),direct_hypothesis_sha256:'c'.repeat(64),analysis_source:'experimental_direct_pose'}};
+const directExport=a.createResearchReport(direct,layout,{margin:0,minDuration:0,maxInterval:1,columns:1,rows:1});
+assert.equal(directExport.scope,'experimental_direct_pose_not_validated_customer_counts');
+assert.equal(directExport.source.direct_hypothesis_sha256,'c'.repeat(64));
+assert.throws(()=>a.createResearchReport({...direct,research_metadata:{hypothesis_sha256:'a'.repeat(64),analysis_source:'experimental_direct_pose'}},layout,{margin:0,minDuration:0,maxInterval:1,columns:1,rows:1}));
