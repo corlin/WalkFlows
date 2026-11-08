@@ -1,0 +1,11 @@
+/* Optional model comparison; sample-specific, not accuracy or identity truth. */
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const root=path.resolve(__dirname,'..'),p=path.join(root,'data/processed'),a=require('../walkflows/hypothesis_analytics.js'),t=require('../walkflows/zone_transitions.js');
+const read=x=>JSON.parse(fs.readFileSync(path.join(p,x))),hash=x=>crypto.createHash('sha256').update(fs.readFileSync(path.join(p,x))).digest('hex');
+const experiment=read('site03-pose-s-experiment-scripts/summary.json'),baseMeta=read('site03-hypotheses/summary.json'),modelFile='site03-pose-s-mixed-hypotheses/hypotheses.json',linkedFile='site03-pose-s-experiment-scripts/linked.json';
+if(hash('site03-hypotheses/hypotheses.json')!==baseMeta.artifact_sha256||hash(modelFile)!==experiment.hypotheses_summary.artifact_sha256||hash(linkedFile)!==experiment.linked_sha256)throw Error('hypothesis hash mismatch');
+const zones=[{id:'south',name:'South example',type:'zone',x1:-6,y1:-3,x2:3,y2:3},{id:'north',name:'North example',type:'zone',x1:-6,y1:3.4,x2:3,y2:10}],options={fps:15,margin:.1,minDuration:.2,maxInterval:.1,transitionWindow:30};
+const sets=[['nano','site03-hypotheses/hypotheses.json'],['nano_linked','site03-tracklet-experiment/pose-linked.json'],['mixed','site03-pose-s-mixed-hypotheses/hypotheses.json'],['mixed_linked',linkedFile]],reports=[];
+const tracklets=read('site03-tracklet-experiment/summary.json');if(hash('site03-tracklet-experiment/pose-linked.json')!==tracklets.results.pose.artifact_sha256||hash('site03-tracklet-experiment/summary.json')!==experiment.tracklet_summary_sha256)throw Error('tracklet provenance mismatch');
+for(const [name,file] of sets){const hypotheses=read(file).hypotheses,result=t.summarize(hypotheses,zones,options,a);reports.push({name,hash:hash(file),hypotheses:hypotheses.length,transitions:result.events,interrupted:result.interrupted});}
+const result={scope:'Example region events only; reference geometry and identity not validated.',zones,options,reports};fs.writeFileSync(path.join(p,'site03-pose-s-experiment-scripts/event-comparison.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));
