@@ -4,7 +4,7 @@ This experiment does not alter the default detector, association, or quality gat
 """
 from collections import Counter,defaultdict
 from pathlib import Path
-import csv,hashlib,json,math,sys
+import argparse,csv,hashlib,json,math,sys
 import cv2,numpy as np,torch
 from scipy.spatial.transform import Rotation
 from ultralytics import YOLO,__version__ as ultralytics_version
@@ -14,7 +14,8 @@ from fetch_site03_calibration import files,valid as valid_calibration
 from walkflows.reference_eval import convert_reference,match_positions
 from walkflows.artifact_cache import sha256
 from walkflows.crossview import local_duplicate_keys
-camera='C0001056_v2';raw=root/'data/raw/multiview/006_site03_tracks';assets=root/'data/upstream-research'
+parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--camera',choices=['C0001055_v4','C0001056_v2'],default='C0001056_v2');args=parser.parse_args()
+camera=args.camera;raw=root/'data/raw/multiview/006_site03_tracks';assets=root/'data/upstream-research'
 video=raw/(camera+'.mp4');reference=raw/'ground-truth.json';weights=root/'data/models/yolo11s-pose.pt'
 scene_path=assets/'site03_scene03.json';sensor_path=assets/(camera+'.json')
 if not valid(video,FILES[video.name]) or not valid(reference,FILES[reference.name]): raise ValueError('source checksum mismatch')
@@ -26,7 +27,7 @@ if scene['global-transformation']!={'translation':[0,0,0],'rotation':[0,0,0,1],'
 ref=json.loads(reference.read_text())['track_results'];parsed=convert_reference(ref)
 if ref['frames']!=399 or ref['start-frame']!=0: raise ValueError('unexpected reference coverage')
 rotation=Rotation.from_quat(transform['rotation']);C=np.asarray(transform['translation']);scale=np.asarray(sensor['format'])/[896,672];A=np.asarray(sensor['A']);hull=np.asarray(sensor['calib-hull'],dtype=np.float32);bounds=scene['hist-aabb'];exp=np.array([(d-j,j) for d in range(8,-1,-1) for j in range(d+1)])
-out=root/'data/processed/site03-direct-pose-probe';out.mkdir(parents=True,exist_ok=True);path=out/'observations.csv'
+out=root/'data/processed/site03-direct-pose-probe'/camera;out.mkdir(parents=True,exist_ok=True);path=out/'observations.csv'
 fields=['frame','local_id','confidence','left','top','right','bottom','ankle_x','ankle_y','ankle_method','floor_x','floor_y','geometry_valid']
 model=YOLO(str(weights));cap=cv2.VideoCapture(str(video));rows=[]
 try:

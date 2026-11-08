@@ -13,4 +13,4 @@ Reproduce with the existing project environment and prepared baseline:
 .venv/bin/python scripts/probe_site03_pose_direct.py
 ```
 
-The ignored output directory `data/processed/site03-direct-pose-probe/` contains tracked boxes, selected ankles, projection and frame-level matching evidence plus input and output SHA-256 hashes. The optional GPU experiment is not part of the default verifier. No new manual annotation or training was used. Before promotion, evaluate independent clips, identity continuity, localization and downstream region events, including failures and false positives.
+The ignored per-camera output directory `data/processed/site03-direct-pose-probe/C0001056_v2/` contains tracked boxes, selected ankles, projection and frame-level matching evidence plus input and output SHA-256 hashes. The optional GPU experiment is not part of the default verifier. No new manual annotation or training was used. Before promotion, evaluate independent clips, identity continuity, localization and downstream region events, including failures and false positives.
