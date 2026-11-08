@@ -1,0 +1,9 @@
+# Calibration camera positions in the research view
+
+The fixed site03 scene metadata provides six binocular-camera transforms but has empty `background-image`, `cad-model-key`, entrance and staff zones, and `known-planes`. The [pinned published scene file](https://huggingface.co/datasets/prcvlabs/multiview-retail-tracking/blob/6cf0e1066653f7efe1d0aae5c49860b19ef9a6e5/calibration/scenes/site03_scene03.json) therefore does not provide a store floor plan or business-zone map. The interface continues to show scene coordinates rather than inventing physical walls or furniture.
+
+An optional toggle displays the six transform translations as camera reference positions on the scene-coordinate plane. The two currently selected video cameras use distinct colors; all camera IDs and x/y coordinates are also available as text. The extraction requires the pinned scene hash, matching camera IDs, finite coordinates, unit per-camera scale and identity global transform. Unsupported transforms are rejected rather than silently assumed. The export includes the original x/y/height coordinates alongside the scene hash.
+
+These points come from the same calibration used by the research projection; they are not independently measured installations, viewing directions, field-of-view boundaries or occlusion-aware coverage. A camera marker does not prove that a particular point or person is visible, and the physical mapping remains unvalidated. Camera anchors are a visual reference and do not change inference, associations, statistics or layout.
+
+Tests cover nonidentity transforms, malformed/duplicate camera IDs and nonfinite positions; the real-data integration test checks all six positions and the scene hash. Browser inspection verified the toggle and markers. The normal full verifier rebuilds the page and runs these checks.

@@ -48,3 +48,6 @@ assert.equal(quality.cameras.reduce((n,c)=>n+c.observation_rows,0),928);
 assert.equal(quality.cameras.reduce((n,c)=>n+c.eligible_rows,0),549);
 assert.equal(quality.reference_missing_frames,1);assert.equal(quality.hypotheses.spatial_conflicts,1);
 assert.equal(quality.cameras.find(c=>c.camera==='C0001025_v1').frames_without_tracks,400);
+const sceneBytes=fs.readFileSync(path.join(root,'data/upstream-research/site03_scene03.json'));const scene=JSON.parse(sceneBytes);
+assert.equal(crypto.createHash('sha256').update(sceneBytes).digest('hex'),data.research_metadata.scene_sha256);
+assert.deepEqual(data.camera_anchors,scene['bcam-keys'].map((camera,i)=>({camera,x:scene['bcam-transforms'][i].translation[0],y:scene['bcam-transforms'][i].translation[1],height:scene['bcam-transforms'][i].translation[2]})));
