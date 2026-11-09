@@ -49,3 +49,8 @@ See [74-wildtrack-preliminary.md](74-wildtrack-preliminary.md) for the third-par
 ## Dataset download completion
 
 The pinned multiview-retail-tracking download completed on 2026-11-09: download-report.json records status complete, 1,910 previously verified files, 2 downloaded files, and no failures for this final pass. All 1,912 manifest entries were verified by the downloader. The exact report and data are local and ignored by Git. Completion of download is not equivalent to using every file in training: unlabeled media and the held-out test split retain their separate roles.
+
+
+## Unlabeled-data feasibility
+
+See [75-unlabeled-multiview-pilot.md](75-unlabeled-multiview-pilot.md) for a fixed 46-frame, two-camera train-site probe. Only two sampled frames produced cross-view unique proximity candidates; these are not verified identities. This single sparse segment does not represent all unlabeled data, and the ignored exploration script is not a production pipeline.
