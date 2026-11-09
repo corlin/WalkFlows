@@ -23,11 +23,13 @@ def fetch(entry):
  if digest(path,entry):return 'verified'
  if adopt_verified_part(part,path,lambda p:digest(p,entry)):return 'resumed'
  if part.exists() and part.stat().st_size>=entry['size']:os.replace(part,part.with_name(part.name+'.invalid.'+str(time.time_ns())))
- for host in ('huggingface.co','hf-mirror.com'):
-  url='https://'+host+'/datasets/'+REPO+'/resolve/'+REV+'/'+urllib.parse.quote(entry['path'],safe='/')
-  subprocess.run(['curl','-fsSL','--http1.1','--continue-at','-','--retry','3','--retry-all-errors','--retry-delay','2','--connect-timeout','15','--max-time','180','--output',str(part),url],stdout=subprocess.DEVNULL)
-  if adopt_verified_part(part,path,lambda p:digest(p,entry)):return 'downloaded'
-  if part.exists() and part.stat().st_size>=entry['size']:os.replace(part,part.with_name(part.name+'.invalid.'+str(time.time_ns())))
+ for attempt in range(3):
+  for host in ('huggingface.co','hf-mirror.com'):
+   url='https://'+host+'/datasets/'+REPO+'/resolve/'+REV+'/'+urllib.parse.quote(entry['path'],safe='/')
+   # A new curl invocation re-reads the current partial length after a timeout.
+   subprocess.run(['curl','-fsSL','--http1.1','--continue-at','-','--connect-timeout','15','--max-time','120','--output',str(part),url],stdout=subprocess.DEVNULL)
+   if adopt_verified_part(part,path,lambda p:digest(p,entry)):return 'downloaded'
+   if part.exists() and part.stat().st_size>=entry['size']:os.replace(part,part.with_name(part.name+'.invalid.'+str(time.time_ns())))
  raise RuntimeError('download or checksum failed: '+entry['path'])
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--download',action='store_true',help='download and verify all files');args=parser.parse_args()
@@ -40,7 +42,10 @@ def main():
  if not args.download:return
  counts={'verified':0,'resumed':0,'downloaded':0,'failed':0};failures=[]
  with ThreadPoolExecutor(max_workers=3) as pool:
-  pending=[pool.submit(fetch,e) for e in entries]
+  def priority(e):
+   path=e['path']
+   return (0 if path.startswith('testcases/') and 'site04' in path else 1 if path.startswith('testcases/') and 'site06' in path else 2,path)
+  pending=[pool.submit(fetch,e) for e in sorted(entries,key=priority)]
   for done,future in enumerate(as_completed(pending),1):
    try:counts[future.result()]+=1
    except Exception as exc:counts['failed']+=1;failures.append(str(exc));print(str(exc),flush=True)
