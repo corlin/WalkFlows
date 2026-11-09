@@ -44,3 +44,8 @@ Record input revisions, parameters, splits, output paths, verification, failures
 ## WILDTRACK preliminary probe
 
 See [74-wildtrack-preliminary.md](74-wildtrack-preliminary.md) for the third-party mirror revision, source-hash caveat, a Y-origin discrepancy, and a single-frame conditional detector/foot comparison. It is exploratory only, not an official benchmark. Dataset usage and redistribution conditions remain unverified.
+
+
+## Dataset download completion
+
+The pinned multiview-retail-tracking download completed on 2026-11-09: download-report.json records status complete, 1,910 previously verified files, 2 downloaded files, and no failures for this final pass. All 1,912 manifest entries were verified by the downloader. The exact report and data are local and ignored by Git. Completion of download is not equivalent to using every file in training: unlabeled media and the held-out test split retain their separate roles.

@@ -24,3 +24,18 @@ Confirm official data provenance and terms; audit the mirror hashes against an a
 ## Frozen follow-up sample plan
 
 Before inspecting additional results, select C1 frames 00000000, 00000500, 00001000, 00001500 and 00001995 from the same pinned third-party revision; frame 00000000 is already exploratory, so the other four are the new observations. Use the same pinned weights, confidence 0.1, image size 640, IoU gate 0.5, ankle confidence 0.5 and -900 cm Y origin, with no threshold selection on these frames. Report per-frame visible references, detections, matches, pose support, and conditional box-bottom and ankle median errors; distinguish missing inputs and do not average frame medians as person-level evidence. One camera and five correlated time points cannot establish generalization, and the third-party mirror and unknown dataset terms remain explicit limitations.
+
+
+## Frozen five-frame C1 results
+
+The prescribed follow-up completed with the same pinned inputs and fixed parameters. Frame 0 was exploratory and the four subsequent frames were chosen before their results were observed. Each frame uses one-to-one assignment maximizing total IoU followed by the 0.5 gate; it is not guaranteed to maximize the number of above-gate matches. Distances are conditional on a supported ankle for the same matched detections:
+
+| Frame | Visible references | Detections | Matches | Ankle-supported | Box median, m | Ankle median, m |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0 | 33 | 14 | 7 | 7 | 0.234 | 1.015 |
+| 500 | 20 | 6 | 5 | 5 | 0.246 | 0.833 |
+| 1000 | 24 | 18 | 12 | 12 | 0.157 | 0.584 |
+| 1500 | 21 | 9 | 7 | 7 | 0.140 | 0.698 |
+| 1995 | 22 | 11 | 9 | 9 | 0.149 | 0.841 |
+
+Per-frame ignored local reports are data/processed/wildtrack-probe-00000000.json through the other selected frame numbers; each lists exact input and weight SHA-256 hashes. The exploratory script is data/processed/wildtrack-five-frame-probe.py. It is not a versioned pipeline. The reference boxes, reference positions and camera model may share annotation or projection assumptions. One camera, five frames, selection by 2D IoU and no independent feet annotations preclude a general model-quality or tracking conclusion. These results motivate investigating point selection and visibility, not promoting a correction or changing product defaults.
