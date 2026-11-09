@@ -13,9 +13,10 @@ from walkflows.crossview import local_duplicate_keys
 from walkflows.floor_projection import project_pixel
 from walkflows.pose_foot import select_foot
 from walkflows.reference_eval import convert_reference
-from walkflows.scene_transforms import compose_camera,normalized_bounds
+from walkflows.scene_transforms import compose_camera,normalized_bounds,scene_global_transform
 from walkflows.weak_supervision import unique_position_pairs
 from walkflows.scenario_names import valid_scenario_name
+from walkflows.reference_extent import normalize_reference_extent
 from scripts.fetch_multiview_dataset import digest
 parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--scenario',required=True);parser.add_argument('--camera');args=parser.parse_args()
 if not valid_scenario_name(args.scenario):parser.error('invalid scenario name')
@@ -28,11 +29,21 @@ role=roles[0]
 def read(path):
  if path not in entries or not digest(raw/path,entries[path]):raise ValueError('missing or unverified input '+path)
  return json.loads((raw/path).read_text())
-manifest=read(manifest_path);reference=read(reference_path)['track_results'];refs=convert_reference(reference)['by_frame'];frames=reference['frames']
+manifest=read(manifest_path);reference=read(reference_path)['track_results'];declared_frames=reference['frames'];video_evidence=[]
+if args.scenario=='004_site01_clutter':
+ for entry in manifest['videos']:
+  path=prefix+entry['file']
+  if path not in entries or not digest(raw/path,entries[path]):raise ValueError('missing or corrupt video '+path)
+  cap=cv2.VideoCapture(str(raw/path))
+  try:
+   if not cap.isOpened():raise ValueError('unable to open video '+path)
+   video_evidence.append({'frames':int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),'fps':cap.get(cv2.CAP_PROP_FPS)})
+  finally:cap.release()
+reference,extent_policy=normalize_reference_extent(args.scenario,reference,video_evidence);refs=convert_reference(reference)['by_frame'];frames=reference['frames']
 if type(reference.get('start-frame')) is not int or reference['start-frame']<0:raise ValueError('invalid reference start metadata')
 scene_path='calibration/scenes/'+manifest['scene-key']+'.json';scene=read(scene_path);bounds=normalized_bounds(scene['hist-aabb']);origin=reference['top-left'];step=reference['hist-sz'];expected=[origin[0],origin[1],origin[0]+reference['width']*step,origin[1]+reference['height']*step]
 if not np.allclose(bounds,expected,atol=step+1e-5,rtol=0):raise ValueError('scene/reference bounds mismatch beyond one grid cell')
-global_t=scene['global-transformation'];vertical=Rotation.from_quat(global_t['rotation']).apply([0,0,1])
+global_t=scene_global_transform(scene);vertical=Rotation.from_quat(global_t['rotation']).apply([0,0,1])
 if not np.allclose(vertical,[0,0,1],atol=1e-8,rtol=0) or abs(global_t['translation'][2])>1e-8:raise ValueError('unsupported tilted or shifted ground plane')
 weights=root/'data/models/yolo11s-pose.pt';expected_weight='1060bda4a27012060eca246f9b2adeea22eabb045a1e58f8d229be29b7ebc2ba'
 if sha256(weights)!=expected_weight or not torch.cuda.is_available():raise ValueError('pinned model or CUDA unavailable')
@@ -44,7 +55,7 @@ for camera in selected:
  if video_path not in entries or not digest(video,entries[video_path]):raise ValueError('missing or corrupt video '+video_path)
  if camera not in scene['bcam-keys'] or not math.isclose(video_entry['fps']*reference['frame-duration'],1,abs_tol=1e-5):raise ValueError('camera or fps mismatch')
  transform=compose_camera(scene['bcam-transforms'][scene['bcam-keys'].index(camera)],global_t)
- contract={'split':role,'scenario':args.scenario,'camera':camera,'inventory_sha256':sha256(state/'manifest.json'),'splits_sha256':sha256(state/'site-splits.json'),'manifest_sha256':sha256(raw/manifest_path),'reference_sha256':sha256(raw/reference_path),'scene_sha256':sha256(raw/scene_path),'sensor_sha256':sha256(raw/sensor_path),'video_sha256':sha256(video),'weights_sha256':expected_weight,'script_sha256':sha256(Path(__file__)),'scenario_validator_sha256':sha256(root/'walkflows/scenario_names.py'),'fps':video_entry['fps'],'frames':frames,'reference_start_frame':reference['start-frame'],'frame_index_policy':'clip_relative_reference_path','confidence':.1,'imgsz':640,'ankle_threshold':.5,'distance_gate':.5,'torch':str(torch.__version__),'ultralytics':ultra_version,'opencv':cv2.__version__}
+ contract={'split':role,'scenario':args.scenario,'camera':camera,'inventory_sha256':sha256(state/'manifest.json'),'splits_sha256':sha256(state/'site-splits.json'),'manifest_sha256':sha256(raw/manifest_path),'reference_sha256':sha256(raw/reference_path),'scene_sha256':sha256(raw/scene_path),'sensor_sha256':sha256(raw/sensor_path),'video_sha256':sha256(video),'weights_sha256':expected_weight,'script_sha256':sha256(Path(__file__)),'scenario_validator_sha256':sha256(root/'walkflows/scenario_names.py'),'extent_validator_sha256':sha256(root/'walkflows/reference_extent.py'),'scene_transforms_sha256':sha256(root/'walkflows/scene_transforms.py'),'fps':video_entry['fps'],'frames':frames,'declared_reference_frames':declared_frames,'reference_extent_policy':extent_policy,'reference_start_frame':reference['start-frame'],'frame_index_policy':'clip_relative_reference_path','confidence':.1,'imgsz':640,'ankle_threshold':.5,'distance_gate':.5,'torch':str(torch.__version__),'ultralytics':ultra_version,'opencv':cv2.__version__}
  dest=output/(camera+'.jsonl');cache=output/(camera+'.cache.json')
  if cache_valid(cache,contract,output,(dest.name,)):
   print(camera,'verified cache',flush=True);continue

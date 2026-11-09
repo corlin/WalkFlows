@@ -23,3 +23,10 @@ def normalized_bounds(bounds):
  a=_values(bounds,4);x1,x2=sorted((float(a[0]),float(a[2])));y1,y2=sorted((float(a[1]),float(a[3])))
  if x1==x2 or y1==y2:raise ValueError('empty bounds')
  return [x1,y1,x2,y2]
+
+
+def scene_global_transform(scene):
+    """Match upstream's identity default when the global field is absent."""
+    return scene.get("global-transformation", {
+        "translation": [0, 0, 0], "rotation": [0, 0, 0, 1], "scale": 1
+    })

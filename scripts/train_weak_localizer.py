@@ -24,7 +24,7 @@ def load(scenarios,role):
   manifest=json.loads((raw/manifest_rel).read_text());folder=processed/'weak-position-labels'/scenario
   for camera in sorted(x['camera'] for x in manifest['videos']):
    path=folder/(camera+'.jsonl');cache=folder/(camera+'.cache.json');meta=json.loads(cache.read_text());contract=meta['contract']
-   if contract['split']!=role or contract['scenario']!=scenario or contract['camera']!=camera or contract['script_sha256']!=sha256(export_script) or contract.get('scenario_validator_sha256')!=sha256(root/'walkflows/scenario_names.py') or contract['inventory_sha256']!=sha256(state/'manifest.json') or contract['splits_sha256']!=sha256(state/'site-splits.json') or contract['manifest_sha256']!=sha256(raw/manifest_rel) or not cache_valid(cache,contract,folder,(path.name,)):raise ValueError('weak-label provenance mismatch')
+   if contract['split']!=role or contract['scenario']!=scenario or contract['camera']!=camera or contract['script_sha256']!=sha256(export_script) or contract.get('scenario_validator_sha256')!=sha256(root/'walkflows/scenario_names.py') or contract.get('extent_validator_sha256')!=sha256(root/'walkflows/reference_extent.py') or contract.get('scene_transforms_sha256')!=sha256(root/'walkflows/scene_transforms.py') or contract['inventory_sha256']!=sha256(state/'manifest.json') or contract['splits_sha256']!=sha256(state/'site-splits.json') or contract['manifest_sha256']!=sha256(raw/manifest_rel) or not cache_valid(cache,contract,folder,(path.name,)):raise ValueError('weak-label provenance mismatch')
    inputs[scenario+'/'+camera]={'role':role,'weak_labels_sha256':sha256(path),'cache_sha256':sha256(cache)}
    with path.open() as f:
     frames=[json.loads(line) for line in f]
