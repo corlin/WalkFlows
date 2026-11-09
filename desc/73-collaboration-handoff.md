@@ -59,3 +59,15 @@ See [75-unlabeled-multiview-pilot.md](75-unlabeled-multiview-pilot.md) for a fix
 ## Six-camera direct-pose experiment
 
 See [77-six-camera-direct-pose.md](77-six-camera-direct-pose.md). The existing site03 006 direct-pose runner accepts all six pinned cameras, and an explicit --all-cameras comparison writes a separate research artifact. Same-clip reference-near coverage rose from 435 to 450 versus the two-direct mixed variant, with four conflicts and no additional example-region event. This is development evidence, not a validated identity or customer-count result; it is available as a separately labelled optional review and comparison source, and has not replaced the review default.
+
+
+## Six-camera second-clip comparison
+
+See [78-six-camera-second-clip.md](78-six-camera-second-clip.md). On the already-explored 007 same-site clip, six-camera direct pose produced 429 reference-near pairs versus 418 with two cameras, but unmatched positions increased from 62 to 218 and conflicts from 2 to 5; neither recovered the fixed example transition. These are coverage diagnostics, not verified identity or accuracy.
+
+
+## Pause handoff (2026-11-09)
+
+The user requested a temporary wrap-up after current runtime tasks. No training, inference or download job remained active at the last process check; the existing local review server on port 8767 was left running. The fixed full dataset download completed and was verified; generated data, models and reports remain local under ignored data directories. The site03-only research verifier passed with 124 Python tests and its JavaScript checks. Both 007 comparison modes and event summaries were rebuilt with provenance checks.
+
+The current project is not fully accepted: cross-camera identity, localization, trustworthy region transitions and end-to-end business results remain unresolved. The latest six-camera 007 comparison did not recover the example transition and introduced more unmatched observations and conflicts; see [78-six-camera-second-clip.md](78-six-camera-second-clip.md). When the user asks to resume, check live processes, working tree, remote main, this handoff and the numbered desc before starting new work. Continue in WSL as corlin using the existing .venv; do not assume a historical process is still running.
