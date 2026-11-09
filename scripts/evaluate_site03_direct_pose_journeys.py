@@ -1,7 +1,7 @@
 """Build a mixed direct-pose research variant and compare scene coverage."""
 from pathlib import Path
 from collections import defaultdict,Counter
-import csv,itertools,json,sys
+import argparse,csv,itertools,json,sys
 root=Path(__file__).resolve().parents[1];sys.path.insert(0,str(root));sys.path.insert(0,str(root/'scripts'))
 from fetch_site03_sample import FILES,valid
 from walkflows.artifact_cache import sha256
@@ -9,7 +9,9 @@ from walkflows.crossview import unique_pairs,summarize_pairs,local_duplicate_key
 from walkflows.journeys import build_hypotheses
 from walkflows.reference_eval import convert_reference
 from walkflows.scene_reference_coverage import compare_scene
-p=root/'data/processed';baseline=p/'site03-pose-floor';meta=json.loads((baseline/'summary.json').read_text());cameras=[x['camera'] for x in meta['cameras']];targets={'C0001055_v4','C0001056_v2'}
+parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--all-cameras',action='store_true',help='compare six direct-pose cameras in a separate research artifact');args=parser.parse_args()
+p=root/'data/processed';baseline=p/'site03-pose-floor';meta=json.loads((baseline/'summary.json').read_text());cameras=[x['camera'] for x in meta['cameras']];targets=set(cameras) if args.all_cameras else {'C0001055_v4','C0001056_v2'}
+if args.all_cameras and (len(cameras)!=6 or set(cameras)!={'C0001020_v1','C0001025_v1','C0001029_v2','C0001053_v5','C0001055_v4','C0001056_v2'}):raise ValueError('all-camera mode requires all six unique site03 cameras')
 observations=[];inputs={}
 for cam in cameras:
  if cam in targets:
@@ -41,8 +43,8 @@ expected={(o['camera'],o['id'],o['frame']) for o in observations}
 if len(used)!=len(expected) or set(used)!=expected:raise ValueError('observation conservation failure')
 for h in result['hypotheses']:
  for s in h['samples']:s['relative_s']=s['frame']/15
-result.update({'scope':'experimental mixed direct-pose research hypotheses; not validated identities','inputs':inputs,'fps':15})
-out=p/'site03-direct-pose-journeys';out.mkdir(parents=True,exist_ok=True);path=out/'hypotheses.json';path.write_text(json.dumps(result,indent=2,allow_nan=False))
+result.update({'scope':('experimental six-camera direct-pose research hypotheses; not validated identities' if args.all_cameras else 'experimental mixed direct-pose research hypotheses; not validated identities'),'inputs':inputs,'fps':15})
+out=p/('site03-direct-pose-all-journeys' if args.all_cameras else 'site03-direct-pose-journeys');out.mkdir(parents=True,exist_ok=True);path=out/'hypotheses.json';path.write_text(json.dumps(result,indent=2,allow_nan=False))
 raw=root/'data/raw/multiview/006_site03_tracks/ground-truth.json'
 if not valid(raw,FILES['ground-truth.json']):raise ValueError('reference checksum mismatch')
 ref=convert_reference(json.loads(raw.read_text())['track_results'])['by_frame']
@@ -50,5 +52,5 @@ coverage=compare_scene(result['hypotheses'],ref,400,.5);base=p/'site03-hypothese
 if sha256(base)!=base_meta['artifact_sha256']:raise ValueError('baseline hypothesis checksum mismatch')
 base_coverage=compare_scene(json.loads(base.read_text())['hypotheses'],ref,400,.5)
 counts=lambda c:{k:v for k,v in c.items() if k!='frames'}
-report={'script_sha256':sha256(Path(__file__)),'scope':'exploratory same-sample mixed model, no identity, accuracy or customer-count validation','inputs':inputs,'reference_sha256':sha256(raw),'baseline_hypotheses_sha256':sha256(base),'hypotheses_sha256':sha256(path),'input_observations':len(observations),'hypotheses':len(result['hypotheses']),'multi_camera_hypotheses':sum(len(h['members'])>1 for h in result['hypotheses']),'sample_states':dict(Counter(s['status'] for h in result['hypotheses'] for s in h['samples'])),'association_states':dict(Counter(a['status'] for a in result['associations'])),'pairs':pair_evidence,'reference_radius':.5,'baseline_coverage':counts(base_coverage),'direct_mixed_coverage':counts(coverage)}
+report={'script_sha256':sha256(Path(__file__)),'scope':('exploratory same-sample six-camera direct model, no identity, accuracy or customer-count validation' if args.all_cameras else 'exploratory same-sample mixed model, no identity, accuracy or customer-count validation'),'inputs':inputs,'reference_sha256':sha256(raw),'baseline_hypotheses_sha256':sha256(base),'hypotheses_sha256':sha256(path),'input_observations':len(observations),'hypotheses':len(result['hypotheses']),'multi_camera_hypotheses':sum(len(h['members'])>1 for h in result['hypotheses']),'sample_states':dict(Counter(s['status'] for h in result['hypotheses'] for s in h['samples'])),'association_states':dict(Counter(a['status'] for a in result['associations'])),'pairs':pair_evidence,'reference_radius':.5,'baseline_coverage':counts(base_coverage),('direct_all_coverage' if args.all_cameras else 'direct_mixed_coverage'):counts(coverage)}
 (out/'report.json').write_text(json.dumps(report,indent=2));(out/'coverage.json').write_text(json.dumps(coverage,indent=2));print(json.dumps({k:v for k,v in report.items() if k not in ('pairs','inputs')},indent=2))

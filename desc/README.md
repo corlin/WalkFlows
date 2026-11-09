@@ -143,3 +143,5 @@ WalkFlows 将多摄像头人员轨迹转换为门店空间触点和客户旅程�
 - [Unlabeled multiview pilot](75-unlabeled-multiview-pilot.md)
 
 - [Track-start coverage investigation](76-track-start-coverage.md)
+
+- [Six-camera direct-pose experiment](77-six-camera-direct-pose.md)

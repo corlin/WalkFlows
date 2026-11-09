@@ -54,3 +54,8 @@ The pinned multiview-retail-tracking download completed on 2026-11-09: download-
 ## Unlabeled-data feasibility
 
 See [75-unlabeled-multiview-pilot.md](75-unlabeled-multiview-pilot.md) for a fixed 46-frame, two-camera train-site probe. Only two sampled site02 frames produced cross-view proximity candidates; a second fixed site04 probe had none across its 360 sampled camera-pair/frame combinations. These are not verified identities, two sparse segments do not represent all unlabeled data, and the ignored exploration scripts are not production pipelines.
+
+
+## Six-camera direct-pose experiment
+
+See [77-six-camera-direct-pose.md](77-six-camera-direct-pose.md). The existing site03 006 direct-pose runner accepts all six pinned cameras, and an explicit --all-cameras comparison writes a separate research artifact. Same-clip reference-near coverage rose from 435 to 450 versus the two-direct mixed variant, with four conflicts and no additional example-region event. This is development evidence, not a validated identity or customer-count result; it has not replaced the review default.

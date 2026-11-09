@@ -14,7 +14,7 @@ from fetch_site03_calibration import files,valid as valid_calibration
 from walkflows.reference_eval import convert_reference,match_positions
 from walkflows.artifact_cache import sha256
 from walkflows.crossview import local_duplicate_keys
-parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--camera',choices=['C0001055_v4','C0001056_v2'],default='C0001056_v2');args=parser.parse_args()
+parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--camera',choices=['C0001020_v1','C0001025_v1','C0001029_v2','C0001053_v5','C0001055_v4','C0001056_v2'],default='C0001056_v2');args=parser.parse_args()
 camera=args.camera;raw=root/'data/raw/multiview/006_site03_tracks';assets=root/'data/upstream-research'
 video=raw/(camera+'.mp4');reference=raw/'ground-truth.json';weights=root/'data/models/yolo11s-pose.pt'
 scene_path=assets/'site03_scene03.json';sensor_path=assets/(camera+'.json')
