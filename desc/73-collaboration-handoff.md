@@ -53,4 +53,4 @@ The pinned multiview-retail-tracking download completed on 2026-11-09: download-
 
 ## Unlabeled-data feasibility
 
-See [75-unlabeled-multiview-pilot.md](75-unlabeled-multiview-pilot.md) for a fixed 46-frame, two-camera train-site probe. Only two sampled frames produced cross-view unique proximity candidates; these are not verified identities. This single sparse segment does not represent all unlabeled data, and the ignored exploration script is not a production pipeline.
+See [75-unlabeled-multiview-pilot.md](75-unlabeled-multiview-pilot.md) for a fixed 46-frame, two-camera train-site probe. Only two sampled site02 frames produced cross-view proximity candidates; a second fixed site04 probe had none across its 360 sampled camera-pair/frame combinations. These are not verified identities, two sparse segments do not represent all unlabeled data, and the ignored exploration scripts are not production pipelines.
