@@ -19,3 +19,8 @@ With pinned YOLO11s-pose weights, confidence 0.1, image size 640, class person, 
 ## Next work
 
 Confirm official data provenance and terms; audit the mirror hashes against an authorized original if available. Freeze a held-out frame selection, use multiple cameras and independent recordings when possible, and build a tested importer plus explicit one-to-one matching and coverage accounting. Examine pose, box, geometry and detection separately. Do not tune on this single exploratory frame or claim that its ranking generalizes to site03 or retail stores.
+
+
+## Frozen follow-up sample plan
+
+Before inspecting additional results, select C1 frames 00000000, 00000500, 00001000, 00001500 and 00001995 from the same pinned third-party revision; frame 00000000 is already exploratory, so the other four are the new observations. Use the same pinned weights, confidence 0.1, image size 640, IoU gate 0.5, ankle confidence 0.5 and -900 cm Y origin, with no threshold selection on these frames. Report per-frame visible references, detections, matches, pose support, and conditional box-bottom and ankle median errors; distinguish missing inputs and do not average frame medians as person-level evidence. One camera and five correlated time points cannot establish generalization, and the third-party mirror and unknown dataset terms remain explicit limitations.
