@@ -39,3 +39,8 @@ Record input revisions, parameters, splits, output paths, verification, failures
 2. Check official WILDTRACK access, usage terms and annotation coordinate conventions; build a traceable independent comparison without mixing it into the reserved test split.
 3. Audit the leave-site-out prototype and provenance. Plan comparisons that avoid repeatedly tuning against one validation site and report site- and track-level support.
 4. Continue toward real, verified localization, cross-camera identity, events and the complete user flow; weak-proxy regression alone does not complete the project.
+
+
+## WILDTRACK preliminary probe
+
+See [74-wildtrack-preliminary.md](74-wildtrack-preliminary.md) for the third-party mirror revision, source-hash caveat, a Y-origin discrepancy, and a single-frame conditional detector/foot comparison. It is exploratory only, not an official benchmark. Dataset usage and redistribution conditions remain unverified.

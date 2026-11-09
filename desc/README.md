@@ -137,3 +137,5 @@ WalkFlows 将多摄像头人员轨迹转换为门店空间触点和客户旅程�
 - [Weak localizer pilot](72-weak-localizer-pilot.md)
 
 - [Collaboration handoff](73-collaboration-handoff.md)
+
+- [WILDTRACK preliminary probe](74-wildtrack-preliminary.md)
