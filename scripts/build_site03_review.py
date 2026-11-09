@@ -65,6 +65,9 @@ obj={'scene':'site03_scene03','bounds':scene_data['hist-aabb'],'camera_anchors':
 direct=load_direct_pose(root,sha(hyp_path),sha(reference),sha(scene))
 if direct is not None:
  obj['direct_pose_hypotheses']=direct['hypotheses'];obj['direct_pose_boxes']=direct['camera_boxes'];obj['research_metadata']['direct_hypothesis_sha256']=direct['sha256']
+direct_all=load_direct_pose(root,sha(hyp_path),sha(reference),sha(scene),all_cameras=True)
+if direct_all is not None:
+ obj['direct_pose_all_hypotheses']=direct_all['hypotheses'];obj['direct_pose_all_boxes']=direct_all['camera_boxes'];obj['research_metadata']['direct_all_hypothesis_sha256']=direct_all['sha256']
 tmp=out/'data.json.tmp';tmp.write_text(json.dumps(obj,allow_nan=False));os.replace(tmp,out/'data.json')
 shutil.copyfile(root/'walkflows/site03_review.html',out/'index.html')
 for name in ('layout.js','local_zones.js','site03_events.js','hypothesis_analytics.js','research_funnel.js','zone_transitions.js','source_comparison.js','quality_report.js'):shutil.copyfile(root/'walkflows'/name,out/name)

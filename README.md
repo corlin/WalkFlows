@@ -51,6 +51,8 @@ node scripts/compare_site03_direct_pose_events.js
 
 若本机没有 site02 数据，最后一行可省略 --cross-scene。构建时只有通过来源校验的实验产物才会出现在页面中；普通准备流程不会自动下载该可选模型或运行实验。视频中的基线框与蓝色虚线实验框使用不同局部 ID，不可直接视为同一身份。详情见 [多镜实验](desc/65-direct-pose-multiview.md) 和 [界面说明](desc/67-direct-pose-review.md)。
 
+六路直接姿态研究模式可在依次处理六个相机后，执行 .venv/bin/python scripts/evaluate_site03_direct_pose_journeys.py --all-cameras，再运行 prepare 重新生成页面。页面可分别选择两路混合或六路实验轨迹、叠加对应视频框，并在相同区域与时段对照参考。实验来源仍未验证身份或顾客人数，原有默认模式不变。详见 [六路实验](desc/77-six-camera-direct-pose.md)。
+
 ## 数据与许可
 
 当前主要研究样本来自 [PRCV Labs multiview retail tracking 数据集](https://huggingface.co/datasets/prcvlabs/multiview-retail-tracking)，固定数据修订及校验信息见 [样本获取脚本](scripts/fetch_site03_sample.py)。该数据集标注为 CC BY-NC 4.0，用于非商业研究和教育；数据、模型、代码及其依赖的许可应分别核验，不能据此默认商业使用。视频、模型和生成结果保存在忽略的 data/ 目录，不提交到仓库。其他资源及许可边界见 [数据清单](desc/03-data-and-licenses.md)。
@@ -68,4 +70,4 @@ node scripts/compare_site03_direct_pose_events.js
 
 常规复现入口为 .venv/bin/python -m walkflows prepare --cross-scene；它检查固定输入，运行或复用经过校验的缓存，并执行 Python 与 JavaScript 检查。验证报告和日志位于 data/processed/site03-verification/ 和 data/processed/local-pipeline/。通过这些检查仅说明当前研究链可复现，不等于完成全项目验收。
 
-已用部分公开数据运行首个弱监督训练试验；部分验证摄像头退化，尚未接入默认流程。全量数据和更广泛评估仍在推进。仓库尚未添加项目代码的 LICENSE 文件，不应根据非商业化定位推定具体授权条款。
+已用部分公开数据运行首个弱监督训练试验；部分验证摄像头退化，尚未接入默认流程。固定版本全量数据已下载并完成校验；更广泛的训练和评估仍在推进。仓库尚未添加项目代码的 LICENSE 文件，不应根据非商业化定位推定具体授权条款。

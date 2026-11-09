@@ -17,3 +17,7 @@ assert.deepEqual(select('baseline',base,direct,{hypothesis_sha256:'a'.repeat(64)
 assert.deepEqual(select('direct',base,direct,{hypothesis_sha256:'a'.repeat(64),direct_hypothesis_sha256:'b'.repeat(64)}),{hypotheses:direct,source:'experimental_direct_pose',sha256:'b'.repeat(64)});
 assert.throws(()=>select('direct',base,null,{hypothesis_sha256:'a'.repeat(64)}));
 assert.throws(()=>select('unknown',base,direct,{hypothesis_sha256:'a'.repeat(64)}));
+
+const directAll=[h('all',[0])];
+assert.deepEqual(select('direct_all',base,direct,{hypothesis_sha256:'a'.repeat(64),direct_hypothesis_sha256:'b'.repeat(64),direct_all_hypothesis_sha256:'c'.repeat(64)},directAll),{hypotheses:directAll,source:'experimental_direct_pose_all',sha256:'c'.repeat(64)});
+assert.throws(()=>select('direct_all',base,direct,{hypothesis_sha256:'a'.repeat(64)},null));

@@ -46,3 +46,10 @@ assert.equal(movementDirection(movementTrack,4,{intervals:5,minDisplacement:.1})
 assert.equal(movementDirection({...movementTrack,samples:movementTrack.samples.filter(s=>s.frame!==3)},5,{intervals:5,minDisplacement:.1}),null);
 assert.equal(movementDirection({...movementTrack,samples:movementTrack.samples.map(s=>({...s,x:0}))},5,{intervals:5,minDisplacement:.1}),null);
 assert.equal(movementDirection({...movementTrack,samples:movementTrack.samples.map(s=>s.frame===3?{...s,status:'spatial_conflict',x:null,y:null}:s)},5,{intervals:5,minDisplacement:.1}),null);
+
+// Six-camera direct source exports its own provenance and research scope.
+const allDirectData={...data,research_metadata:{...data.research_metadata,analysis_source:'experimental_direct_pose_all',direct_all_hypothesis_sha256:'b'.repeat(64)}};
+const allDirectReport=createResearchReport(allDirectData,layout,{margin:0,minDuration:0,maxInterval:.6,columns:2,rows:1});
+assert.equal(allDirectReport.scope,'experimental_direct_pose_all_not_validated_customer_counts');
+assert.equal(allDirectReport.source.direct_all_hypothesis_sha256,'b'.repeat(64));
+assert.throws(()=>createResearchReport({...allDirectData,research_metadata:{analysis_source:'experimental_direct_pose_all'}},layout,{margin:0,minDuration:0,maxInterval:.6,columns:2,rows:1}));

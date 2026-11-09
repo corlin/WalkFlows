@@ -3,14 +3,15 @@ from pathlib import Path
 import csv,json,math
 from walkflows.artifact_cache import sha256
 
-def load_direct_pose(root,baseline_hypothesis_sha,reference_sha,scene_sha):
- root=Path(root);processed=root/'data/processed';folder=processed/'site03-direct-pose-journeys';report_path=folder/'report.json';hyp_path=folder/'hypotheses.json'
+def load_direct_pose(root,baseline_hypothesis_sha,reference_sha,scene_sha,*,all_cameras=False):
+ root=Path(root);processed=root/'data/processed';folder=processed/('site03-direct-pose-all-journeys' if all_cameras else 'site03-direct-pose-journeys');report_path=folder/'report.json';hyp_path=folder/'hypotheses.json'
  if not report_path.exists() and not hyp_path.exists():return None
  try:
   report=json.loads(report_path.read_text());hyp=json.loads(hyp_path.read_text())
   if report['hypotheses_sha256']!=sha256(hyp_path) or report['baseline_hypotheses_sha256']!=baseline_hypothesis_sha or report['reference_sha256']!=reference_sha or report['script_sha256']!=sha256(root/'scripts/evaluate_site03_direct_pose_journeys.py') or hyp['inputs']!=report['inputs']:return None
   base_meta=json.loads((processed/'site03-pose-floor/summary.json').read_text());entries={x['camera']:x for x in base_meta['cameras']}
   if base_meta['scene_sha256']!=scene_sha or set(report['inputs'])!=set(entries):return None
+  if all_cameras and (len(base_meta['cameras'])!=6 or set(entries)!={'C0001020_v1','C0001025_v1','C0001029_v2','C0001053_v5','C0001055_v4','C0001056_v2'} or any(item['kind']!='direct_pose' for item in report['inputs'].values())):return None
   camera_boxes={}
   for cam,item in report['inputs'].items():
    if item['kind']=='baseline':
