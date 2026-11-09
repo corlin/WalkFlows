@@ -2,6 +2,10 @@
 
 更新：2026-11-07。当前工作目录 `/home/corlin/WalkFlows`；所有 WSL 命令显式使用 `corlin`。Windows D 盘副本不是当前研发主副本。历史 Mac 结果仅作为历史证据。
 
+## Current collaboration entry (2026-11-09)
+
+See [73-collaboration-handoff.md](73-collaboration-handoff.md) for the authoritative WSL workspace, coordination constraints, data splits, current results and next actions. See [72-weak-localizer-pilot.md](72-weak-localizer-pilot.md) for the latest weak-supervision experiments and negative results. The following is historical status and may predate recent work.
+
 ## 已可复现
 
 - Python 3.12.11、torch 2.9.1+cu128、torchvision 0.24.1；两张 GPU 的矩阵乘法与 CUDA NMS 通过。
