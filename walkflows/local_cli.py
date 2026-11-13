@@ -116,8 +116,16 @@ def main(argv=None):
     offsets=sub.add_parser('project-apply-offsets',help='create a validated project using timing offsets');offsets.add_argument('--config',required=True);offsets.add_argument('--offsets',required=True);offsets.add_argument('--output',required=True)
     preview=sub.add_parser('project-preview-videos',help='create verified browser playback copies');preview_source=preview.add_mutually_exclusive_group(required=True);preview_source.add_argument('--output',help='completed run directory');preview_source.add_argument('--config',help='project config before processing');preview.add_argument('--destination',required=True,help='new preview bundle directory');preview.add_argument('--camera',action='append',help='camera ID; repeat to select, defaults to all')
     timing=sub.add_parser('project-check-timing',help='audit decoded presentation timestamps');timing.add_argument('--video',required=True,help='original video');timing.add_argument('--preview',help='optional playback copy');timing.add_argument('--report',help='write a new JSON report')
+    normalize=sub.add_parser('project-normalize-video',help='resample a video into a constant-frame-rate analysis input');normalize.add_argument('--video',required=True);normalize.add_argument('--fps',required=True,type=float,help='explicit target frames per second');normalize.add_argument('--destination',required=True,help='new output directory')
     args=parser.parse_args(argv)
     if os.geteuid()==0:print('Direct root execution is prohibited; use the WSL non-root user.',file=sys.stderr);return 1
+    if args.command=='project-normalize-video':
+        from walkflows.video_normalize import normalize_video
+        try:
+            result=normalize_video(args.video,args.fps,args.destination)
+            print(json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False))
+        except (ValueError,OSError,TypeError) as error:print('Video normalization failed: '+str(error),file=sys.stderr);return 1
+        return 0
     if args.command=='project-check-timing':
         from walkflows.video_timing import audit_video_timing
         try:

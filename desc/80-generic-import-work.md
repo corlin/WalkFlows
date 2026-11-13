@@ -155,3 +155,18 @@ A browser check confirmed that the six generated MJPEG AVI smoke clips are not p
 局限：这只对 FFmpeg 解码出来的帧进行相对时间检查，不证明浏览器显示帧与解码帧一一对应、不同相机时间同步或视频内容一致，也不自动修正变帧率。处理与复核主路径目前仍以标称帧率计算时间：若最大偏差显著，轨迹、跨镜候选与事件时间可能错位，需另行处理并核验，不能将报告视作自动对齐或准确性证明。
 
 本机用 8 帧 MJPG 原片及生成的 H.264 预览检查，最大相对 PTS 偏差为 0；这是短合成样本。另用 12 帧的合成变帧率录像，对比相同帧数及 10 fps 标称帧率的匀速副本，最大偏差为 0.4 秒（4 帧），证明只核验帧数及标称帧率不够；不代表任意编码或浏览器均已验证。
+
+### 将不规则帧时间转为恒帧率分析输入（2026-11-13）
+
+当 `project-check-timing` 显示明显偏差时，可选择为每路单独创建新的恒帧率分析文件，再用这些文件创建项目：
+
+```bash
+.venv/bin/python -m walkflows project-normalize-video --video /path/original.mp4 --fps 15 --destination /path/new-camera1
+.venv/bin/python -m walkflows project-create --name Room --camera camera1=/path/new-camera1/normalized.mp4 --camera camera2=/path/new-camera2/normalized.mp4 --output /path/new-project.json
+```
+
+每路需根据录像选择目标帧率并分别执行，目标目录必须不存在。转码用 FFmpeg 的 `setpts=PTS-STARTPTS,fps:round=near`，输出 H.264 无音轨，**可能复制或丢弃帧**；它改变了分析输入和首帧时间，不是无损修复，也不自动同步相机。应重新核验每路偏移、画面、标定和业务结果；源视频保持不变。若保留原项目的空间映射，需确认实际画面尺寸、方向及坐标对应没有变化。用户须确认 FFmpeg 及编码器许可。
+
+每个目录包含 `normalized.mp4`、`manifest.json` 和状态日志，记录原片及输出哈希、帧数、时间偏差、尺寸、FFmpeg 哈希和参数；可用输出哈希与运行记录中的输入哈希关联原片。已验证输出尺寸、标称帧率和逐帧相对时间；这不证明视觉内容、浏览器解码或跨镜时序准确。失败可能留下部分文件与 failed 状态，不会覆盖已有目录；请检查后另选新目录。
+
+在六路 8 帧合成变帧率短片上，首版归一化各生成 11 帧，源与标称时间最大偏差约 0.205 秒，输出检查为 0；随后使用这些副本创建项目、执行 GPU 检测并在浏览器打开六路回放，未设置空间标定。其后增加尺寸和输出哈希核验，用最终版本对其中一路重新运行得到 448×336、8→11 帧及 0 的输出时间偏差。该短片仅为功能验证，不证明真实变帧率素材普遍有效、人员身份或坐标准确。

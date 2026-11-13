@@ -357,7 +357,7 @@ async function init() {
     const canvas = document.createElement("canvas"); stage.append(video,canvas);
     const note = document.createElement("p"); note.className = "note";
     note.textContent = camera.calibrated ? "已提供平面映射；精度未验证。" : "未提供平面映射；仅显示单镜结果。";
-    note.textContent += camera.video_source === "transcoded_preview" ? " · 使用转码预览副本；叠框基于原视频，逐帧时间戳尚未校验。" : " · 使用原视频。";
+    note.textContent += camera.video_source === "transcoded_preview" ? " · 使用转码预览副本；叠框基于原视频，逐帧时间戳尚未校验。" : " · 使用分析输入视频。";
     if(camera.frame_count_matches_metadata===false) note.textContent += " · 解码帧数与元数据不一致；共同时间范围按已解码帧数估算，请检查原视频。";
     video.addEventListener("error", () => { note.textContent += " · 视频无法播放：请检查浏览器是否支持该格式和编码。"; });
     video.addEventListener("seeked", () => draw(item)); video.addEventListener("loadedmetadata", () => draw(item));
