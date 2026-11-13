@@ -167,3 +167,5 @@ WalkFlows 将多摄像头人员轨迹转换为门店空间触点和客户旅程�
 - [Site04 046 cross-scene diagnostic](87-site04-046-diagnostic.md)
 
 - [WILDTRACK official six-view probe](88-wildtrack-official-sixview-probe.md)
+
+- [WILDTRACK cross-view association audit](89-wildtrack-association-audit.md)
