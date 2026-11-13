@@ -1,10 +1,12 @@
 # 当前状态与下一步
 
+> **当前协作入口（2026-11-13）**：通用多路文件导入、逐镜处理、人工时间 / 平面配置及复核已有开发实现，但尚未完成可用 MVP 验收。以 [MVP 主规格](79-multicamera-import-mvp.md) 和 [现状批判性复核](90-mvp-critical-review.md) 为准；以下内容是历史记录。
+
 更新：2026-11-07。当前工作目录 `/home/corlin/WalkFlows`；所有 WSL 命令显式使用 `corlin`。Windows D 盘副本不是当前研发主副本。历史 Mac 结果仅作为历史证据。
 
 ## 下一阶段核心目标（2026-11-09）
 
-用户明确要求将“输入同一空间 5–6 路不同视角录像，经配置与处理后直接查看结果”作为下一阶段 MVP 核心目标。输入、处理流程、可交付内容及验收条件以 [79-multicamera-import-mvp.md](79-multicamera-import-mvp.md) 为准。当前固定样本原型尚未具备通用视频组导入能力。
+用户明确要求将“输入同一空间 5–6 路不同视角录像，经配置与处理后直接查看结果”作为下一阶段 MVP 核心目标。输入、处理流程、可交付内容及验收条件以 [79-multicamera-import-mvp.md](79-multicamera-import-mvp.md) 为准。当前已有通用视频组导入与处理的开发实现，仍未完成可用 MVP 验收。
 
 ## Current collaboration entry (2026-11-09)
 

@@ -45,13 +45,15 @@ status 显示输入与回放包的来源状态，不执行 GPU 健康检查。bu
   --camera front=/path/front.mp4 --camera back=/path/back.mp4 \
   --offset back=0.2 --output /path/project.json
 .venv/bin/python -m walkflows project-calibration-ui --config /path/project.json --port 8769
-# 根据页面对应点生成新配置，详见 desc/80
-.venv/bin/python -m walkflows project-run --config /path/project.json --output /path/run --device cpu
+# 在页面为 front 和 back 选择对应点并下载到 WSL 可访问的路径，按 Ctrl-C 停止标定服务后：
+.venv/bin/python -m walkflows project-apply-calibration --config /path/project.json --camera front --points /path/front-points.json --output /path/front-mapped.json
+.venv/bin/python -m walkflows project-apply-calibration --config /path/front-mapped.json --camera back --points /path/back-points.json --output /path/mapped-project.json
+.venv/bin/python -m walkflows project-run --config /path/mapped-project.json --output /path/run --device cpu
 .venv/bin/python -m walkflows project-status --output /path/run
 .venv/bin/python -m walkflows project-review --output /path/run --port 8768
 ~~~
 
-录像偏移、平面坐标和对应点须根据实际场地确定；没有标定时仍可查看单镜观察。结果包含近邻候选、区域事件和观察热度，但跨镜身份、去重人数及事件准确率尚未验证。浏览器不支持的编码可能无法播放。续跑和标定方法见 [通用流程](desc/80-generic-import-work.md)，参考邻近对照见 [评估记录](desc/82-generic-reference-evaluation.md)。该流程尚未完成下一阶段 MVP 的全部验收。
+下载到 Windows 的对应点文件须先使用 WSL 可访问的路径，例如 `/mnt/c/Users/.../Downloads/...`；不要把示例坐标当作实际场地。录像偏移、平面坐标和对应点须根据实际场地确定；没有标定时仍可查看单镜观察。结果包含近邻候选、区域事件和观察热度，但跨镜身份、去重人数及事件准确率尚未验证。浏览器不支持的编码可能无法播放。续跑和标定方法见 [通用流程](desc/80-generic-import-work.md)，参考邻近对照见 [评估记录](desc/82-generic-reference-evaluation.md)。该流程尚未完成下一阶段 MVP 的全部验收。
 
 ## 可选：直接姿态跟踪实验
 
