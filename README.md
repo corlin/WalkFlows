@@ -75,6 +75,9 @@ node scripts/compare_site03_direct_pose_events.js
 
 若原视频可被处理但浏览器无法播放，可安装可选预览依赖（`uv pip install --python .venv/bin/python '.[preview]'`），或使用已有 FFmpeg。先执行 `project-preview-videos --config /path/project.json --destination /path/new-preview`，再为 `project-calibration-ui` 和 `project-review` 传入 `--preview-dir /path/new-preview`。推理仍读取原视频，副本仅用于播放。副本校验帧数、尺寸和标称帧率，但未校验逐帧时间戳；时间对齐和叠框需结合原片核验。具体流程、失败处理和依赖许可见 [通用导入工作记录](desc/80-generic-import-work.md)。
 
+
+处理前还可使用 `project-check-timing --video /path/original --preview /path/playback-copy` 完整检查帧时间；无预览时可省略后一个参数。项目仍使用标称帧率，时间不规则时需特别核验，详见 [时间检查说明](desc/80-generic-import-work.md)。
+
 ## 数据与许可
 
 当前主要研究样本来自 [PRCV Labs multiview retail tracking 数据集](https://huggingface.co/datasets/prcvlabs/multiview-retail-tracking)，固定数据修订及校验信息见 [样本获取脚本](scripts/fetch_site03_sample.py)。该数据集标注为 CC BY-NC 4.0，用于非商业研究和教育；数据、模型、代码及其依赖的许可应分别核验，不能据此默认商业使用。视频、模型和生成结果保存在忽略的 data/ 目录，不提交到仓库。其他资源及许可边界见 [数据清单](desc/03-data-and-licenses.md)。

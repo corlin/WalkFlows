@@ -141,3 +141,17 @@ A browser check confirmed that the six generated MJPEG AVI smoke clips are not p
 ### 官方 WILDTRACK 六镜单帧检查（2026-11-13）
 
 官方归档现可从 WSL 访问；选择性提取首帧的六路官方图像与参考框后，按 0.5 IoU 做单镜一对一条件对照。126 个逐镜参考框、83 个检测框中有 44 对匹配，结果仅为单帧开发诊断，户外数据不能替代零售验证；详见 [官方数据检查](88-wildtrack-official-sixview-probe.md)。
+
+### 检查录像与预览逐帧时间（2026-11-13）
+
+`project-check-timing` 使用已有系统 FFmpeg 或同一虚拟环境的可选 `imageio-ffmpeg`，完整解码首个视频流，通过 [FFmpeg showinfo](https://ffmpeg.org/ffmpeg-filters.html#showinfo) 的帧序号、整数 PTS 和时间基准计算每帧相对首帧的时间。命令只检查，不更改视频：
+
+```bash
+.venv/bin/python -m walkflows project-check-timing --video /path/original.mp4 --preview /path/playback-copy.mp4 --report /path/new-timing-report.json
+```
+
+`--preview` 和 `--report` 可省略；报告文件不得已存在。输出最大偏离标称帧率时间的秒数与帧数，并在提供副本时输出同序帧间最大相对 PTS 差异。时间戳缺失、非严格递增、帧数不一致或 FFmpeg 解码失败会报错，而不是声称对齐；报告记录源、副本和 FFmpeg 的 SHA-256。该检查需完整解码全部帧，长视频可能耗时和占用内存。误差是否可接受取决于应用，程序不设自动通过阈值。
+
+局限：这只对 FFmpeg 解码出来的帧进行相对时间检查，不证明浏览器显示帧与解码帧一一对应、不同相机时间同步或视频内容一致，也不自动修正变帧率。处理与复核主路径目前仍以标称帧率计算时间：若最大偏差显著，轨迹、跨镜候选与事件时间可能错位，需另行处理并核验，不能将报告视作自动对齐或准确性证明。
+
+本机用 8 帧 MJPG 原片及生成的 H.264 预览检查，最大相对 PTS 偏差为 0；这是短合成样本。另用 12 帧的合成变帧率录像，对比相同帧数及 10 fps 标称帧率的匀速副本，最大偏差为 0.4 秒（4 帧），证明只核验帧数及标称帧率不够；不代表任意编码或浏览器均已验证。

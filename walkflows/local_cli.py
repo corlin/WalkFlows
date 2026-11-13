@@ -115,8 +115,19 @@ def main(argv=None):
     evaluate=sub.add_parser('project-evaluate-reference',help='conditional frame-indexed position comparison');evaluate.add_argument('--output',required=True,help='completed run directory');evaluate.add_argument('--reference',required=True);evaluate.add_argument('--distance',required=True,type=float,help='proximity gate in scene units');evaluate.add_argument('--assume-aligned',action='store_true',required=True,help='assert reference uses the same frame zero and coordinates');evaluate.add_argument('--report',help='write a new JSON report')
     offsets=sub.add_parser('project-apply-offsets',help='create a validated project using timing offsets');offsets.add_argument('--config',required=True);offsets.add_argument('--offsets',required=True);offsets.add_argument('--output',required=True)
     preview=sub.add_parser('project-preview-videos',help='create verified browser playback copies');preview_source=preview.add_mutually_exclusive_group(required=True);preview_source.add_argument('--output',help='completed run directory');preview_source.add_argument('--config',help='project config before processing');preview.add_argument('--destination',required=True,help='new preview bundle directory');preview.add_argument('--camera',action='append',help='camera ID; repeat to select, defaults to all')
+    timing=sub.add_parser('project-check-timing',help='audit decoded presentation timestamps');timing.add_argument('--video',required=True,help='original video');timing.add_argument('--preview',help='optional playback copy');timing.add_argument('--report',help='write a new JSON report')
     args=parser.parse_args(argv)
     if os.geteuid()==0:print('Direct root execution is prohibited; use the WSL non-root user.',file=sys.stderr);return 1
+    if args.command=='project-check-timing':
+        from walkflows.video_timing import audit_video_timing
+        try:
+            result=audit_video_timing(args.video,args.preview)
+            content=json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False)
+            if args.report:
+                with Path(args.report).open('x',encoding='utf-8') as file:file.write(content+chr(10))
+            print(content)
+        except (ValueError,OSError,TypeError) as error:print('Timing check failed: '+str(error),file=sys.stderr);return 1
+        return 0
     if args.command=='project-evaluate-reference':
         from walkflows.generic_reference import evaluate_run
         try:
