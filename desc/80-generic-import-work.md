@@ -187,3 +187,19 @@ A browser check confirmed that the six generated MJPEG AVI smoke clips are not p
 来源信息反映本地归一化清单与输入哈希的一致性，不证明清单真实来源或原片仍存在；项目验证不会读取原片重新比对。直接以普通 `--camera` 指定 `normalized.mp4` 仍可运行，但不会自动关联其旁边的清单。重采样可能复制或丢帧、重置首帧时间，仍须重新核验相机时间对齐。
 
 六路合成短片已使用 `--normalized-camera` 创建项目并完成 GPU 处理，运行和复核清单中均保留六路原片 / 输入哈希；浏览器逐路显示重采样提示。自动测试覆盖不完整状态、输出哈希不符，以及配置迁移时相对清单路径的保留。该检查不证明实际录像的同步、映射或人员识别准确性。
+
+### 批量准备多路恒帧率项目（2026-11-13）
+
+已有项目可一次按同一目标帧率顺序转换全部摄像头，并生成新项目：
+
+```bash
+.venv/bin/python -m walkflows project-normalize-project --config /path/source-project.json --fps 15 --destination /path/new-batch
+.venv/bin/python -m walkflows project-calibration-ui --config /path/new-batch/project.json
+.venv/bin/python -m walkflows project-run --config /path/new-batch/project.json --output /path/new-run --device 0
+```
+
+源项目的相机顺序、偏移、映射及 ROI 会被保留，源文件不覆盖；每路保留原片和输出哈希及独立归一化清单，新项目关联这些清单。原偏移仅作为待复核初值：每路重采样会重置首帧时间、可能复制或丢帧，必须结合实际画面重新核验时间对齐；映射和 ROI 也应结合画面复核。命令当前对所有相机使用同一显式帧率，不会自动选择最佳值；已含重采样来源的项目会拒绝再次批量转换，避免丢失上游来源链。
+
+批次目录必须不存在，按相机串行处理。每路完成后写状态；只有全部转换、源配置和文件哈希复核、新项目验证均完成后，才发布 `project.json`。失败时保留日志和可能存在的部分输出，未发布的新项目不可使用；当前不支持自动续跑，应检查后另选目录重试。原始配置无时间交集时允许创建供后续调偏移的配置，但不能直接运行需共同时间的处理。
+
+六路 8 帧合成变帧率片段通过该命令各生成 11 帧，随后完成六路 GPU 检测，复核服务验证了六条来源链。自动测试覆盖保留相机配置、来源哈希、拒绝重复转换及第二路失败时不发布项目。这是短片功能检查，不代表真实录像时间同步、标定或识别准确。

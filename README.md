@@ -81,6 +81,9 @@ node scripts/compare_site03_direct_pose_events.js
 
 若需为现有恒帧率处理链准备输入，可显式运行 `project-normalize-video --video /path/original --fps 15 --destination /path/new-camera`，再通过 `project-create --normalized-camera camera1=/path/new-camera` 创建项目并保留来源指纹；帧率仅为示例。该操作可能复制或丢弃帧，并重置起始时间，需要重新核对相机偏移与画面，原视频不会被覆盖。完整流程和溯源说明见 [通用导入工作记录](desc/80-generic-import-work.md)。
 
+
+已有多路项目可使用 `project-normalize-project --config /path/source-project.json --fps 15 --destination /path/new-batch` 批量生成新项目；所有相机共用所指定帧率，原偏移必须重新核验。详见 [批量转换说明](desc/80-generic-import-work.md)。
+
 ## 数据与许可
 
 当前主要研究样本来自 [PRCV Labs multiview retail tracking 数据集](https://huggingface.co/datasets/prcvlabs/multiview-retail-tracking)，固定数据修订及校验信息见 [样本获取脚本](scripts/fetch_site03_sample.py)。该数据集标注为 CC BY-NC 4.0，用于非商业研究和教育；数据、模型、代码及其依赖的许可应分别核验，不能据此默认商业使用。视频、模型和生成结果保存在忽略的 data/ 目录，不提交到仓库。其他资源及许可边界见 [数据清单](desc/03-data-and-licenses.md)。

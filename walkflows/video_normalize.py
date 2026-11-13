@@ -1,13 +1,15 @@
 """Create an explicitly resampled constant-frame-rate analysis input."""
+import hashlib
 import json
 import math
+import os
 import subprocess
 import time
 from pathlib import Path
 
 from walkflows.multicamera_processing import file_sha256, _state
 from walkflows.multicamera_preview import ffmpeg_executable
-from walkflows.multicamera_project import _video
+from walkflows.multicamera_project import _video, build_project
 from walkflows.video_timing import audit_video_timing
 
 
@@ -67,6 +69,69 @@ def normalize_video(video, fps, destination):
         _state(destination/"state.json",journal)
         return report
     except Exception as exc:
+        if journal["cameras"] and journal["cameras"][-1]["status"]=="running":
+            journal["cameras"][-1].update(status="failed",error=str(exc))
+        journal.update(status="failed",error=str(exc),finished_unix_s=time.time())
+        _state(destination/"state.json",journal)
+        raise
+
+
+def normalize_project(config_path, fps, destination):
+    """Normalize each camera sequentially and publish a validated new project."""
+    if (isinstance(fps,bool) or not isinstance(fps,(int,float)) or
+            not math.isfinite(fps) or not .1<=fps<=240):
+        raise ValueError("target fps must be between 0.1 and 240")
+    config_path=Path(config_path).expanduser().resolve(strict=True)
+    destination=Path(destination).expanduser().resolve()
+    config_bytes=config_path.read_bytes()
+    config=json.loads(config_bytes)
+    config_hash=file_sha256(config_path)
+    if config_hash!=hashlib.sha256(config_bytes).hexdigest():
+        raise ValueError("project changed during validation")
+    project=build_project(config_path,allow_no_overlap=True)
+    if any("normalization" in camera for camera in project["cameras"]):
+        raise ValueError("project contains an already normalized camera")
+    if file_sha256(config_path)!=config_hash:
+        raise ValueError("project changed during validation")
+    destination.mkdir(parents=True,exist_ok=False)
+    journal={"status":"running","stage":"normalizing","started_unix_s":time.time(),
+             "source_config_sha256":config_hash,"cameras":[]}
+    _state(destination/"state.json",journal)
+    try:
+        by_id={item["id"]:item for item in config["cameras"]}
+        for camera in project["cameras"]:
+            cid=camera["id"]
+            entry={"id":cid,"status":"running"};journal["cameras"].append(entry)
+            _state(destination/"state.json",journal)
+            bundle=destination/cid
+            report=normalize_video(camera["video"]["path"],fps,bundle)
+            if report["source"]["sha256"]!=camera["video"]["sha256"]:
+                raise ValueError("source changed since project validation: "+cid)
+            by_id[cid]["path"]=str((bundle/"normalized.mp4").resolve())
+            by_id[cid]["normalization_manifest"]=str((bundle/"manifest.json").resolve())
+            entry.update(status="completed",source_sha256=report["source"]["sha256"],
+                         output_sha256=report["output"]["sha256"])
+            _state(destination/"state.json",journal)
+        if file_sha256(config_path)!=config_hash:
+            raise ValueError("project changed during normalization")
+        for camera in project["cameras"]:
+            if file_sha256(camera["video"]["path"])!=camera["video"]["sha256"]:
+                raise ValueError("source changed during normalization: "+camera["id"])
+        journal["stage"]="validating_project";_state(destination/"state.json",journal)
+        candidate=destination/"project.json.part"
+        content=json.dumps(config,indent=2,ensure_ascii=False,allow_nan=False)+chr(10)
+        with candidate.open("x",encoding="utf-8") as file:file.write(content)
+        build_project(candidate,allow_no_overlap=True)
+        os.link(candidate,destination/"project.json")
+        candidate.unlink()
+        journal.update(status="completed",stage="completed",finished_unix_s=time.time(),
+                       project_sha256=file_sha256(destination/"project.json"),
+                       scope="Offsets preserved as estimates; recheck after resampling.")
+        _state(destination/"state.json",journal)
+        return journal
+    except Exception as exc:
+        if journal["cameras"] and journal["cameras"][-1]["status"]=="running":
+            journal["cameras"][-1].update(status="failed",error=str(exc))
         journal.update(status="failed",error=str(exc),finished_unix_s=time.time())
         _state(destination/"state.json",journal)
         raise
