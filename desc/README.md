@@ -149,3 +149,7 @@ WalkFlows 将多摄像头人员轨迹转换为门店空间触点和客户旅程�
 - [Six-camera second-clip evaluation](78-six-camera-second-clip.md)
 
 - [Next-stage multicamera import MVP](79-multicamera-import-mvp.md)
+
+- [Generic multicamera input validation](80-generic-import-work.md)
+
+- [Wi-Fi sensing and localization research](81-wifi-sensing-research.md)

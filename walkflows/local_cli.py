@@ -103,8 +103,72 @@ def main(argv=None):
     s=sub.add_parser('status',help='inspect input and bundle status');s.add_argument('--json',action='store_true')
     p=sub.add_parser('prepare',help='prepare and verify the site03 research bundle');p.add_argument('--fetch',action='store_true',help='retrieve missing fixed inputs and models');p.add_argument('--cross-scene',action='store_true',help='also verify existing site02 comparison assets');p.add_argument('--serve',action='store_true',help='serve the resulting bundle in the foreground');p.add_argument('--port',type=int,default=8767)
     q=sub.add_parser('serve',help='serve the existing bundle on loopback');q.add_argument('--port',type=int,default=8767)
+    project=sub.add_parser('project-validate',help='validate generic local video inputs without running inference');project.add_argument('--config',required=True,help='JSON camera configuration')
+    run=sub.add_parser('project-run',help='run sequential per-camera detection and tracking');run.add_argument('--config',required=True);run.add_argument('--output',required=True);run.add_argument('--weights',default=str(ROOT/'data/models/yolo11n.pt'));run.add_argument('--device',default='cpu',help='CPU or CUDA device, for example cpu or 0');run.add_argument('--resume',action='store_true',help='reuse verified completed cameras in an interrupted or failed run')
+    review=sub.add_parser('project-review',help='review a completed generic run on loopback');review.add_argument('--output',required=True);review.add_argument('--port',type=int,default=8768)
+    calibration=sub.add_parser('project-calibrate',help='fit a plane mapping from matching points');calibration.add_argument('--points',required=True,help='JSON with image_points and plane_points')
+    calui=sub.add_parser('project-calibration-ui',help='select calibration points from project videos');calui.add_argument('--config',required=True);calui.add_argument('--port',type=int,default=8769)
+    applycal=sub.add_parser('project-apply-calibration',help='create a new project config with a fitted mapping');applycal.add_argument('--config',required=True);applycal.add_argument('--camera',required=True);applycal.add_argument('--points',required=True);applycal.add_argument('--output',required=True)
+    create=sub.add_parser('project-create',help='create a validated video project');create.add_argument('--name',required=True);create.add_argument('--camera',action='append',required=True,metavar='ID=PATH');create.add_argument('--offset',action='append',default=[],metavar='ID=SECONDS');create.add_argument('--output',required=True)
+    runstatus=sub.add_parser('project-status',help='inspect a generic processing run');runstatus.add_argument('--output',required=True)
     args=parser.parse_args(argv)
     if os.geteuid()==0:print('Direct root execution is prohibited; use the WSL non-root user.',file=sys.stderr);return 1
+    if args.command=='project-status':
+        from walkflows.multicamera_processing import inspect_run
+        try:result=inspect_run(args.output)
+        except (ValueError,OSError,TypeError) as error:print('Cannot inspect run: '+str(error),file=sys.stderr);return 1
+        print(json.dumps(result,ensure_ascii=False,indent=2));return 0
+    if args.command=='project-create':
+        from walkflows.multicamera_project import create_config
+        try:
+            cameras=[]
+            for spec in args.camera:
+                if '=' not in spec:raise ValueError('camera must use ID=PATH')
+                cid,path=spec.split('=',1);cameras.append({'id':cid,'path':path})
+            offsets={}
+            for spec in args.offset:
+                if '=' not in spec:raise ValueError('offset must use ID=SECONDS')
+                cid,value=spec.split('=',1)
+                if cid in offsets:raise ValueError('duplicate camera offset')
+                offsets[cid]=float(value)
+            if set(offsets)-{c['id'] for c in cameras}:raise ValueError('offset references unknown camera')
+            for camera in cameras:camera['offset_seconds']=offsets.get(camera['id'],0)
+            result=create_config(args.name,cameras,args.output)
+        except (ValueError,OSError) as error:print('Cannot create project: '+str(error),file=sys.stderr);return 1
+        print(json.dumps(result,ensure_ascii=False,indent=2));return 0
+    if args.command=='project-apply-calibration':
+        from walkflows.plane_calibration import apply_calibration
+        try:result=apply_calibration(args.config,args.camera,args.points,args.output)
+        except (ValueError,OSError,KeyError,TypeError) as error:print('Cannot apply calibration: '+str(error),file=sys.stderr);return 1
+        print(json.dumps({'output':str(Path(args.output).resolve()),'points':result['points'],'rmse':result['rmse'],'scope':result['scope']},indent=2));return 0
+    if args.command=='project-calibration-ui':
+        from walkflows.multicamera_project import build_project
+        from walkflows.multicamera_review import serve_calibration
+        try:serve_calibration(build_project(args.config),args.port)
+        except (ValueError,OSError,KeyError) as error:print('Cannot open calibration: '+str(error),file=sys.stderr);return 1
+        return 0
+    if args.command=='project-calibrate':
+        from walkflows.plane_calibration import fit_homography
+        try:
+            points=json.loads(Path(args.points).read_text(encoding='utf-8'));result=fit_homography(points['image_points'],points['plane_points'])
+        except (ValueError,OSError,KeyError,TypeError) as error:print('Invalid calibration: '+str(error),file=sys.stderr);return 1
+        print(json.dumps(result,indent=2));return 0
+    if args.command=='project-review':
+        from walkflows.multicamera_review import serve as serve_project
+        try:serve_project(args.output,args.port)
+        except (ValueError,OSError,KeyError) as error:print('Cannot review project: '+str(error),file=sys.stderr);return 1
+        return 0
+    if args.command=='project-run':
+        from walkflows.multicamera_project import build_project
+        from walkflows.multicamera_processing import run_project
+        try:result=run_project(build_project(args.config),args.output,args.weights,args.device,resume=args.resume)
+        except (ValueError,OSError,RuntimeError) as error:print('Project failed: '+str(error),file=sys.stderr);return 1
+        print(json.dumps({'status':result['status'],'output':str(Path(args.output).resolve()),'cameras':result['cameras']},indent=2));return 0
+    if args.command=='project-validate':
+        from walkflows.multicamera_project import build_project
+        try:result=build_project(args.config)
+        except (ValueError,OSError) as error:print('Invalid project: '+str(error),file=sys.stderr);return 1
+        print(json.dumps(result,ensure_ascii=False,indent=2));return 0
     if args.command=='status':
         result=status()
         if args.json:print(json.dumps(result,ensure_ascii=False,indent=2))
