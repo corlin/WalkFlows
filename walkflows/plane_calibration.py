@@ -33,6 +33,47 @@ def fit_homography(image_points, plane_points):
 
 
 
+def evaluate_check_points(homography, image_points, plane_points, polygon=None):
+    # Evaluate supplied check pairs; the user must establish independence.
+    try:
+        matrix = np.asarray(homography, dtype=np.float64)
+        image = np.asarray(image_points, dtype=np.float64)
+        plane = np.asarray(plane_points, dtype=np.float64)
+        if (matrix.shape != (3, 3) or not np.isfinite(matrix).all()
+                or np.linalg.matrix_rank(matrix) < 3 or image.ndim != 2
+                or image.shape[1] != 2 or len(image) < 1 or image.shape != plane.shape
+                or not np.isfinite(image).all() or not np.isfinite(plane).all()):
+            raise ValueError("invalid matrix or paired points")
+        contour = None
+        if polygon is not None:
+            contour = np.asarray(polygon, dtype=np.float32)
+            if (contour.ndim != 2 or contour.shape[1] != 2 or len(contour) < 3
+                    or not np.isfinite(contour).all() or abs(cv2.contourArea(contour)) < 1e-6):
+                raise ValueError("invalid calibration polygon")
+        homogeneous = np.column_stack((image, np.ones(len(image)))) @ matrix.T
+        denominator = homogeneous[:, 2]
+        scales = np.linalg.norm(matrix[2]) * np.linalg.norm(np.column_stack((image, np.ones(len(image)))), axis=1)
+        if np.any(np.abs(denominator) <= 1e-12 * scales):
+            raise ValueError("check point maps near projective horizon")
+        projected = homogeneous[:, :2] / denominator[:, None]
+        if not np.isfinite(projected).all():
+            raise ValueError("non-finite projection")
+        errors = np.linalg.norm(projected - plane, axis=1)
+        if not np.isfinite(errors).all():
+            raise ValueError("non-finite check error")
+        checks=[]
+        for source, expected, actual, error in zip(image, plane, projected, errors):
+            inside = None if contour is None else cv2.pointPolygonTest(contour, tuple(source), False) >= 0
+            checks.append({"image":source.tolist(), "expected":expected.tolist(),
+                           "projected":actual.tolist(), "error":float(error),
+                           "inside_calibration_polygon":inside})
+        return {"checks":checks, "points":len(checks),
+                "rmse":float(np.sqrt(np.mean(errors ** 2))), "max_error":float(errors.max()),
+                "scope":"Check-point residual in supplied plane units; independence and measurement quality are user responsibilities."}
+    except (TypeError, ValueError, cv2.error, np.linalg.LinAlgError) as exc:
+        raise ValueError("invalid calibration checks: " + str(exc)) from exc
+
+
 def apply_calibration(config_path, camera_id, points_path, output_path):
     """Create a new config; resolve all source paths relative to the old config."""
     config_path = Path(config_path).expanduser().resolve()

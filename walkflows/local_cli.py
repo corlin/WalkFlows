@@ -107,6 +107,7 @@ def main(argv=None):
     run=sub.add_parser('project-run',help='run sequential per-camera detection and tracking');run.add_argument('--config',required=True);run.add_argument('--output',required=True);run.add_argument('--weights',default=str(ROOT/'data/models/yolo11n.pt'));run.add_argument('--device',default='cpu',help='CPU or CUDA device, for example cpu or 0');run.add_argument('--resume',action='store_true',help='reuse verified completed cameras in an interrupted or failed run');run.add_argument('--image-size',type=int,default=640,help='model input size, a multiple of 32');run.add_argument('--confidence',type=float,default=0.25,help='person detection confidence threshold')
     review=sub.add_parser('project-review',help='review a completed generic run on loopback');review.add_argument('--output',required=True);review.add_argument('--port',type=int,default=8768);review.add_argument('--preview-dir',help='verified playback-copy bundle')
     calibration=sub.add_parser('project-calibrate',help='fit a plane mapping from matching points');calibration.add_argument('--points',required=True,help='JSON with image_points and plane_points')
+    checkcal=sub.add_parser('project-check-calibration',help='evaluate separately supplied check points against a camera mapping');checkcal.add_argument('--config',required=True);checkcal.add_argument('--camera',required=True);checkcal.add_argument('--points',required=True,help='JSON with independent image_points and plane_points')
     calui=sub.add_parser('project-calibration-ui',help='select calibration points from project videos');calui.add_argument('--config',required=True);calui.add_argument('--port',type=int,default=8769);calui.add_argument('--preview-dir',help='verified playback-copy bundle')
     applycal=sub.add_parser('project-apply-calibration',help='create a new project config with a fitted mapping');applycal.add_argument('--config',required=True);applycal.add_argument('--camera',required=True);applycal.add_argument('--points',required=True);applycal.add_argument('--output',required=True)
     create=sub.add_parser('project-create',help='create a validated video project');create.add_argument('--name',required=True);create.add_argument('--camera',action='append',required=True,metavar='ID=PATH');create.add_argument('--offset',action='append',default=[],metavar='ID=SECONDS');create.add_argument('--output',required=True)
@@ -160,6 +161,27 @@ def main(argv=None):
             result=create_config(args.name,cameras,args.output)
         except (ValueError,OSError) as error:print('Cannot create project: '+str(error),file=sys.stderr);return 1
         print(json.dumps(result,ensure_ascii=False,indent=2));return 0
+    if args.command=='project-check-calibration':
+        import hashlib
+        from walkflows.plane_calibration import evaluate_check_points
+        try:
+            config_bytes=Path(args.config).read_bytes(); points_bytes=Path(args.points).read_bytes()
+            config=json.loads(config_bytes); points=json.loads(points_bytes)
+            if not isinstance(config,dict) or not isinstance(points,dict):raise ValueError('invalid configuration or check points')
+            cameras=config.get('cameras')
+            if not isinstance(cameras,list):raise ValueError('invalid cameras')
+            matching=[c for c in cameras if isinstance(c,dict) and c.get('id')==args.camera]
+            if len(matching)!=1:raise ValueError('camera must match exactly one entry')
+            camera=matching[0]
+            result=evaluate_check_points(camera.get('homography'),points['image_points'],points['plane_points'],camera.get('calibration_polygon'))
+            result['camera']=args.camera
+            result['config_sha256']=hashlib.sha256(config_bytes).hexdigest()
+            result['check_points_sha256']=hashlib.sha256(points_bytes).hexdigest()
+            provenance=camera.get('calibration_provenance')
+            source=provenance.get('points_sha256') if isinstance(provenance,dict) else None
+            result['same_file_as_fit']=result['check_points_sha256']==source if source else None
+        except (ValueError,OSError,KeyError,TypeError) as error:print('Cannot check calibration: '+str(error),file=sys.stderr);return 1
+        print(json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False));return 0
     if args.command=='project-apply-calibration':
         from walkflows.plane_calibration import apply_calibration
         try:result=apply_calibration(args.config,args.camera,args.points,args.output)
