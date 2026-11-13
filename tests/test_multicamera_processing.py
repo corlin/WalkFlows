@@ -118,6 +118,8 @@ class ProcessingTest(unittest.TestCase):
                 return FakeModel()
             with self.assertRaisesRegex(ValueError,"changed"):
                 run_project(project,output,weights,model_factory=resumed_factory,resume=True,image_size=1280)
+            with self.assertRaisesRegex(ValueError,"changed"):
+                run_project(project,output,weights,model_factory=resumed_factory,resume=True,confidence=0.1)
             changed=copy.deepcopy(project)
             changed["name"]="different"
             with self.assertRaisesRegex(ValueError,"changed"):
@@ -166,14 +168,20 @@ class ProcessingTest(unittest.TestCase):
                 def track(self,frame,**kwargs):
                     self.shape=frame.shape
                     self.image_size=kwargs.get("imgsz")
+                    self.confidence=kwargs.get("conf")
                     return super().track(frame,**kwargs)
             model=CheckROI()
             with self.assertRaisesRegex(ValueError,"image size"):
                 run_project(build_project(config),root/"invalid",weights,model_factory=lambda _:model,image_size=641)
             self.assertFalse((root/"invalid").exists())
+            for confidence in (0, 1.1, float("nan"), True):
+                with self.assertRaisesRegex(ValueError,"confidence"):
+                    run_project(build_project(config),root/"invalid",weights,model_factory=lambda _:model,confidence=confidence)
+                self.assertFalse((root/"invalid").exists())
             out=root/"out"
-            run_project(build_project(config),out,weights,model_factory=lambda _:model,image_size=1280)
+            run_project(build_project(config),out,weights,model_factory=lambda _:model,image_size=1280,confidence=0.1)
             self.assertEqual(model.image_size,1280)
+            self.assertEqual(model.confidence,0.1)
             self.assertEqual(model.shape[:2],(48,54))
             with (out/"a.csv").open() as f: row=next(csv.DictReader(f))
             self.assertEqual(float(row["left"]),20)
