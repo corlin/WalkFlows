@@ -40,11 +40,14 @@ def main():
     p.add_argument("--weights",type=Path,required=True)
     p.add_argument("--output",type=Path,required=True)
     p.add_argument("--device",default="cpu")
+    p.add_argument("--frame",type=int,default=0,help="annotated source frame number")
     args=p.parse_args()
+    if args.frame<0:raise ValueError("frame must be nonnegative")
+    frame=f"{args.frame:08d}"
     root=args.directory.resolve(strict=True)
     manifest=json.loads((root/"manifest.json").read_text())
     files={x["archive_path"].removeprefix("Wildtrack_dataset/"):x for x in manifest["files"]}
-    required=["annotations_positions/00000000.json"]+[f"Image_subsets/C{i}/00000000.png" for i in range(1,7)]
+    required=[f"annotations_positions/{frame}.json"]+[f"Image_subsets/C{i}/{frame}.png" for i in range(1,7)]
     for name in required:
         if name not in files or sha(root/name)!=files[name]["sha256"]:
             raise ValueError("missing or modified input: "+name)
@@ -58,12 +61,12 @@ def main():
         def emit(self, record):
             self.messages.append(record.getMessage())
     warnings=Warnings(); LOGGER.addHandler(warnings)
-    warmup=cv2.imread(str(root/"Image_subsets/C1/00000000.png"))
+    warmup=cv2.imread(str(root/f"Image_subsets/C1/{frame}.png"))
     if warmup is None:raise ValueError("unreadable warmup")
     model.predict(warmup,classes=[0],conf=.25,imgsz=640,device=args.device,verbose=False)
     warmup_warnings=warnings.messages[:]; warnings.messages.clear()
     for camera in range(1,7):
-        path=root/f"Image_subsets/C{camera}/00000000.png"
+        path=root/f"Image_subsets/C{camera}/{frame}.png"
         image=cv2.imread(str(path))
         if image is None:raise ValueError("unreadable image: "+str(path))
         output=model.predict(image,classes=[0],conf=.25,imgsz=640,device=args.device,verbose=False)[0]
@@ -83,7 +86,7 @@ def main():
     LOGGER.removeHandler(warnings)
     if sha(weights)!=weights_hash:raise ValueError("weights changed")
     report={"scope":"One annotated frame, selected six views, IoU 0.5; conditional comparison, not a benchmark or tracking evaluation.",
-            "data_manifest_sha256":sha(root/"manifest.json"),"source_url":manifest["url"],"source_etag":manifest["etag"],
+            "frame":args.frame,"data_manifest_sha256":sha(root/"manifest.json"),"source_url":manifest["url"],"source_etag":manifest["etag"],
             "weights_sha256":weights_hash,"code_sha256":sha(Path(__file__)),"confidence":.25,"image_size":640,"device":args.device,
             "warmup_warnings":warmup_warnings,"evaluation_warnings":warnings.messages,"results":results}
     with args.output.open("x",encoding="utf-8") as f:json.dump(report,f,indent=2);f.write(chr(10))
