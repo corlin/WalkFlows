@@ -84,6 +84,27 @@ function uniqueFramePoints(rows) {
   }
   return result;
 }
+function pointBounds(points) {
+  let bounds=null;
+  for(const p of points) {
+    if(!Number.isFinite(p.x)||!Number.isFinite(p.y))continue;
+    if(!bounds)bounds=[p.x,p.y,p.x,p.y];
+    else bounds=[Math.min(bounds[0],p.x),Math.min(bounds[1],p.y),Math.max(bounds[2],p.x),Math.max(bounds[3],p.y)];
+  }
+  return bounds;
+}
+function continuousTrails(frames, begin, end) {
+  let previous=new Map();
+  for(let frame=begin;frame<=end;frame++) {
+    const current=new Map();
+    for(const point of uniqueFramePoints(frames.get(frame)||[])) {
+      const path=previous.get(point.id)||[];
+      current.set(point.id,[...path,point]);
+    }
+    previous=current;
+  }
+  return previous;
+}
 function regionFlows(events, samples, maxSeconds) {
   if (!Number.isFinite(maxSeconds) || maxSeconds<=0) throw Error("invalid duration");
   const groups=new Map();
@@ -112,4 +133,4 @@ function regionFlows(events, samples, maxSeconds) {
   }
   return result.sort((a,b)=>a.arrival_time-b.arrival_time);
 }
-if (typeof module !== "undefined") module.exports={candidatePairs,pointInPolygon,zoneTransitions,heatGrid,regionFlows,uniqueFramePoints,sanitizeCalibration};
+if (typeof module !== "undefined") module.exports={candidatePairs,pointInPolygon,zoneTransitions,heatGrid,regionFlows,uniqueFramePoints,sanitizeCalibration,continuousTrails,pointBounds};

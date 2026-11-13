@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 let manifest, cards = [], playing = false, anchorClock = 0, anchorTime = 0;
 const colors = ["#137b62","#d35428","#596bd7","#b14183","#a37100","#007d9a"];
-let floorBounds = null;
+let floorBounds = null, fullFloorBounds = null;
 function parseCsv(text) {
   const lines = text.trim().split(/\r?\n/), names = lines.shift().split(",");
   const frames = new Map();
@@ -45,7 +45,7 @@ function prepareFloor() {
     $("floor-note").textContent = "没有可显示的平面坐标：请检查映射、有效区域和检测结果。";
     return;
   }
-  floorBounds = bounds;
+  floorBounds = bounds; fullFloorBounds = bounds.slice();
   $("floor-note").textContent = "散点为当前时间各镜的脚点投影估计；坐标范围根据本次结果自动缩放，不是实际平面图或去重人数。";
   cards.forEach((card,i) => {
     const item = document.createElement("span"); item.className = "legend-item";
@@ -159,6 +159,30 @@ function setupZones() {
     const y=g.ymin+(g.h-g.oy-(event.clientY-rect.top))/g.scale;
     if(Number.isFinite(x)&&Number.isFinite(y)){draft.push([x,y]);drawFloor(Number($("seek").value));}
   };
+  const refreshFloorBounds=bounds=>{
+    floorBounds=bounds;heatCells=null;
+    if($("show-heat").checked)computeHeat();
+    drawFloor(Number($("seek").value));
+  };
+  $("floor-focus").onclick=()=>{
+    const time=Number($("seek").value),points=[];
+    for(const card of cards){
+      const frame=Math.floor((time-card.camera.offset_seconds)*card.camera.fps+0.00001);
+      for(const row of card.frames.get(frame)||[]){
+        if(row.world_x===""||row.world_y==="")continue;
+        points.push({x:Number(row.world_x),y:Number(row.world_y)});
+      }
+    }
+    const bounds=pointBounds(points);
+    if(!bounds){$("floor-view-status").textContent="当前时间没有有效投影，无法聚焦。";return;}
+    refreshFloorBounds(bounds);
+    $("floor-view-status").textContent="已聚焦所选时刻的投影；范围以外的点可能不可见，画面不会自动跟随。";
+  };
+  $("floor-all").onclick=()=>{
+    if(!fullFloorBounds){$("floor-view-status").textContent="当前没有可用平面坐标。";return;}
+    refreshFloorBounds(fullFloorBounds.slice());
+    $("floor-view-status").textContent="显示全时段投影范围。";
+  };
   $("flow-duration").oninput=recomputeFlows;
   $("flow-export").onclick=()=>{
     const payload={schema_version:1,project:manifest.name,scope:"single-camera continuous track region transitions; not identities or deduplicated",
@@ -244,17 +268,27 @@ function drawFloor(time) {
     if(closed){ctx.fillStyle="rgba(255,190,50,.16)";ctx.fill();}
   };
   zones.forEach(z=>drawPolygon(z.points,true));if(draft)drawPolygon(draft,false);
-  // Draw short camera-local trails only; gaps break the line and IDs are never merged.
+  // Only unique, consecutive local observations ending at the current frame.
   cards.forEach((card,i) => {
     const end=Math.floor((time-card.camera.offset_seconds)*card.camera.fps+0.00001);
-    const begin=Math.max(0,end-Math.min(120,Math.ceil(card.camera.fps*3))), previous=new Map();
-    ctx.strokeStyle=colors[i%colors.length];ctx.lineWidth=1.5;ctx.globalAlpha=.65;
-    for(let frame=begin;frame<=end;frame++) for(const row of card.frames.get(frame)||[]) {
-      if(row.local_id===""||row.world_x===""||row.world_y==="")continue;
-      const x=Number(row.world_x),y=Number(row.world_y);if(!Number.isFinite(x)||!Number.isFinite(y))continue;
-      const point=[ox+(x-xmin)*scale,h-oy-(y-ymin)*scale],last=previous.get(row.local_id);
-      if(last && frame-last.frame===1){ctx.beginPath();ctx.moveTo(...last.point);ctx.lineTo(...point);ctx.stroke();}
-      previous.set(row.local_id,{frame,point});
+    const begin=Math.max(0,end-Math.min(120,Math.ceil(card.camera.fps*3)));
+    if(end<0)return;
+    const toCanvas=p=>[ox+(p.x-xmin)*scale,h-oy-(p.y-ymin)*scale];
+    ctx.strokeStyle=colors[i%colors.length];ctx.fillStyle=colors[i%colors.length];
+    ctx.lineWidth=1.5;ctx.globalAlpha=.8;
+    for(const path of continuousTrails(card.frames,begin,end).values()) {
+      if(path.length<2)continue;
+      const points=path.map(toCanvas);
+      ctx.beginPath();ctx.moveTo(...points[0]);for(const p of points.slice(1))ctx.lineTo(...p);ctx.stroke();
+      // A half-second minimum and screen-space displacement suppress obvious jitter.
+      if(path.length-1<Math.ceil(card.camera.fps*.5))continue;
+      const first=points[0],last=points[points.length-1],dx=last[0]-first[0],dy=last[1]-first[1];
+      if(Math.hypot(dx,dy)<8)continue;
+      const angle=Math.atan2(dy,dx),size=9;
+      ctx.beginPath();ctx.moveTo(...last);
+      ctx.lineTo(last[0]-size*Math.cos(angle-.45),last[1]-size*Math.sin(angle-.45));
+      ctx.lineTo(last[0]-size*Math.cos(angle+.45),last[1]-size*Math.sin(angle+.45));
+      ctx.closePath();ctx.fill();
     }
     ctx.globalAlpha=1;
   });
