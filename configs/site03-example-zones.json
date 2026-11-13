@@ -1,0 +1,47 @@
+{
+  "scope": "Illustrative site03 regions from prior research; not an actual store layout.",
+  "zones": [
+    {
+      "name": "south",
+      "points": [
+        [
+          -6,
+          -3
+        ],
+        [
+          3,
+          -3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          -6,
+          3
+        ]
+      ]
+    },
+    {
+      "name": "north",
+      "points": [
+        [
+          -6,
+          3.4
+        ],
+        [
+          3,
+          3.4
+        ],
+        [
+          3,
+          10
+        ],
+        [
+          -6,
+          10
+        ]
+      ]
+    }
+  ]
+}
