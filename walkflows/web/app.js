@@ -55,14 +55,37 @@ function prepareFloor() {
 }
 let zones=[], draft=null, floorGeometry=null;
 let zoneEvents=[], heatCells=null;
+let flowSamples=new Map(), flowCandidates=[];
+function recomputeFlows() {
+  const raw=$("flow-duration").value, seconds=Number(raw);
+  flowCandidates=(raw!=="" && Number.isFinite(seconds) && seconds>0) ? regionFlows(zoneEvents,flowSamples,seconds) : [];
+  updateFlows(Number($("seek").value));
+}
+function updateFlows(time) {
+  const raw=$("flow-duration").value, seconds=Number(raw), list=$("flow-list");list.replaceChildren();
+  if(raw==="" || !Number.isFinite(seconds) || seconds<=0){
+    $("flow-status").textContent="输入最长间隔后计算单镜流转候选；未确认身份，也未跨镜去重。";
+    $("flow-export").disabled=true;return;
+  }
+  const visible=flowCandidates.filter(x=>x.arrival_time<=time);
+  $("flow-status").textContent="截至当前时间："+visible.length+" 条单镜流转候选；轨迹连续不代表真实身份。";
+  for(const item of visible.slice(-20).reverse()){
+    const li=document.createElement("li");
+    li.textContent=item.exit_time.toFixed(2)+"–"+item.arrival_time.toFixed(2)+" 秒 · "+item.camera+" #"+item.id+" · "+item.from+" → "+item.to;
+    list.append(li);
+  }
+  $("flow-export").disabled=flowCandidates.length===0;
+}
+
 function recomputeEvents() {
-  const output=[];
+  const output=[];flowSamples=new Map();
   for(const card of cards) {
     const points=[];
-    for(const [frame, rows] of card.frames) for(const row of rows) {
-      if(row.local_id==="" || row.world_x==="" || row.world_y==="")continue;
-      points.push({id:row.local_id,frame,x:Number(row.world_x),y:Number(row.world_y),
-                   time:card.camera.offset_seconds+frame/card.camera.fps});
+    for(const [frame, rows] of card.frames) for(const point of uniqueFramePoints(rows)) {
+      points.push({...point,frame,time:card.camera.offset_seconds+frame/card.camera.fps});
+      const key=JSON.stringify([card.camera.id,point.id]);
+      if(!flowSamples.has(key))flowSamples.set(key,new Map());
+      flowSamples.get(key).set(frame,1);
     }
     zones.forEach((zone,index)=>{
       for(const event of zoneTransitions(points,zone.points))
@@ -70,6 +93,7 @@ function recomputeEvents() {
     });
   }
   zoneEvents=output.sort((a,b)=>a.time-b.time);
+  recomputeFlows();
 }
 function updateEvents(time) {
   const visible=zoneEvents.filter(e=>e.time<=time), list=$("event-list");list.replaceChildren();
@@ -134,6 +158,13 @@ function setupZones() {
     const x=g.xmin+(event.clientX-rect.left-g.ox)/g.scale;
     const y=g.ymin+(g.h-g.oy-(event.clientY-rect.top))/g.scale;
     if(Number.isFinite(x)&&Number.isFinite(y)){draft.push([x,y]);drawFloor(Number($("seek").value));}
+  };
+  $("flow-duration").oninput=recomputeFlows;
+  $("flow-export").onclick=()=>{
+    const payload={schema_version:1,project:manifest.name,scope:"single-camera continuous track region transitions; not identities or deduplicated",
+      max_seconds:Number($("flow-duration").value),provenance:manifest.provenance,zones,flows:flowCandidates};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));
+    const link=document.createElement("a");link.href=url;link.download="walkflows-region-flows.json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
   $("show-heat").onchange=()=>{if($("show-heat").checked)computeHeat();drawFloor(Number($("seek").value));};
   $("event-export").onclick=()=>{
@@ -251,6 +282,7 @@ function setTime(time, force = false) {
   updateCandidates(time);
   updateZones(time);
   updateEvents(time);
+  updateFlows(time);
 }
 function stop() {
   playing = false; $("play").textContent = "播放";

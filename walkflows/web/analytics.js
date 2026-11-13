@@ -67,4 +67,43 @@ function heatGrid(points, bounds, size) {
   }
   return cells;
 }
-if (typeof module !== "undefined") module.exports={candidatePairs,pointInPolygon,zoneTransitions,heatGrid};
+function uniqueFramePoints(rows) {
+  const counts=new Map();
+  for(const row of rows)if(row.local_id!=="")counts.set(row.local_id,(counts.get(row.local_id)||0)+1);
+  const result=[];
+  for(const row of rows){
+    if(row.local_id==="" || counts.get(row.local_id)!==1 || row.world_x==="" || row.world_y==="")continue;
+    const x=Number(row.world_x),y=Number(row.world_y);
+    if(Number.isFinite(x)&&Number.isFinite(y))result.push({id:row.local_id,x,y});
+  }
+  return result;
+}
+function regionFlows(events, samples, maxSeconds) {
+  if (!Number.isFinite(maxSeconds) || maxSeconds<=0) throw Error("invalid duration");
+  const groups=new Map();
+  for(const e of events){
+    if(typeof e.camera!=="string" || typeof e.id!=="string" || !Number.isInteger(e.frame) ||
+       !Number.isFinite(e.time) || !["enter","exit"].includes(e.type))continue;
+    const key=JSON.stringify([e.camera,e.id]);
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(e);
+  }
+  const result=[];
+  for(const [key,changes] of groups){
+    changes.sort((a,b)=>a.frame-b.frame || a.zone_index-b.zone_index);
+    const support=samples.get(key);if(!support)continue;
+    for(let i=0;i+1<changes.length;i++){
+      const a=changes[i],b=changes[i+1];
+      if(a.type!=="exit" || b.type!=="enter" || a.zone_index===b.zone_index ||
+         b.frame<=a.frame || b.time<=a.time || b.time-a.time>maxSeconds ||
+         (i>0 && changes[i-1].frame===a.frame) ||
+         (i+2<changes.length && changes[i+2].frame===b.frame))continue;
+      let continuous=true;
+      for(let frame=a.frame;frame<=b.frame;frame++)if(support.get(frame)!==1){continuous=false;break;}
+      if(continuous)result.push({camera:a.camera,id:a.id,from:a.zone,to:b.zone,
+        exit_frame:a.frame,arrival_frame:b.frame,exit_time:a.time,arrival_time:b.time});
+    }
+  }
+  return result.sort((a,b)=>a.arrival_time-b.arrival_time);
+}
+if (typeof module !== "undefined") module.exports={candidatePairs,pointInPolygon,zoneTransitions,heatGrid,regionFlows,uniqueFramePoints};

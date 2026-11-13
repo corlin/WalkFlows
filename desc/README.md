@@ -157,3 +157,5 @@ WalkFlows 将多摄像头人员轨迹转换为门店空间触点和客户旅程�
 - [Generic reference comparison](82-generic-reference-evaluation.md)
 
 - [Site04 cross-scene diagnostic](83-site04-cross-scene-diagnostic.md)
+
+- [Resolution comparison and region flow](84-resolution-and-region-flow.md)

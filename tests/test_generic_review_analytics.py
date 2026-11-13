@@ -8,7 +8,7 @@ class GenericReviewAnalyticsTest(unittest.TestCase):
         path = Path(__file__).resolve().parents[1] / "walkflows/web/analytics.js"
         script = """
         const assert = require('assert');
-        const {candidatePairs, pointInPolygon, zoneTransitions, heatGrid} = require(process.argv[1]);
+        const {candidatePairs, pointInPolygon, zoneTransitions, heatGrid, regionFlows, uniqueFramePoints} = require(process.argv[1]);
         const a = [{id:'1', x:0, y:0}];
         const b = [{id:'2', x:0.1, y:0}];
         assert.equal(candidatePairs(a,b,0.2).unique.length,1);
@@ -36,5 +36,20 @@ class GenericReviewAnalyticsTest(unittest.TestCase):
         assert.equal(zoneTransitions(duplicate,region).length,0);
         const grid=heatGrid([{x:0,y:0},{x:1,y:1},{x:1,y:1}], [0,0,1,1],2);
         assert.deepEqual(grid,[1,0,0,2]);
+        const key=JSON.stringify(['cam','1']);
+        const samples=new Map([[key,new Map([[1,1],[2,1],[3,1],[4,1]])]]);
+        const changes=[
+          {camera:'cam',id:'1',frame:1,time:0.1,type:'exit',zone_index:0,zone:'A'},
+          {camera:'cam',id:'1',frame:4,time:0.4,type:'enter',zone_index:1,zone:'B'}
+        ];
+        assert.equal(regionFlows(changes,samples,1).length,1);
+        assert.equal(regionFlows(changes,samples,0.1).length,0);
+        samples.get(key).delete(2);
+        assert.equal(regionFlows(changes,samples,1).length,0);
+        samples.get(key).set(2,1);
+        assert.equal(regionFlows([...changes,{...changes[0],zone_index:2,zone:'C'}],samples,1).length,0);
+        const duplicateWithInvalid = [{local_id:'1',world_x:'1',world_y:'1'}, {local_id:'1',world_x:'',world_y:''}];
+        assert.equal(uniqueFramePoints(duplicateWithInvalid).length,0);
+        assert.equal(uniqueFramePoints([{local_id:'1',world_x:'1',world_y:'1'}]).length,1);
         """
         subprocess.run(["node", "-e", script, str(path)], check=True, capture_output=True, text=True)
