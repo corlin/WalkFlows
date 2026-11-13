@@ -104,7 +104,7 @@ def main(argv=None):
     p=sub.add_parser('prepare',help='prepare and verify the site03 research bundle');p.add_argument('--fetch',action='store_true',help='retrieve missing fixed inputs and models');p.add_argument('--cross-scene',action='store_true',help='also verify existing site02 comparison assets');p.add_argument('--serve',action='store_true',help='serve the resulting bundle in the foreground');p.add_argument('--port',type=int,default=8767)
     q=sub.add_parser('serve',help='serve the existing bundle on loopback');q.add_argument('--port',type=int,default=8767)
     project=sub.add_parser('project-validate',help='validate generic local video inputs without running inference');project.add_argument('--config',required=True,help='JSON camera configuration')
-    run=sub.add_parser('project-run',help='run sequential per-camera detection and tracking');run.add_argument('--config',required=True);run.add_argument('--output',required=True);run.add_argument('--weights',default=str(ROOT/'data/models/yolo11n.pt'));run.add_argument('--device',default='cpu',help='CPU or CUDA device, for example cpu or 0');run.add_argument('--resume',action='store_true',help='reuse verified completed cameras in an interrupted or failed run')
+    run=sub.add_parser('project-run',help='run sequential per-camera detection and tracking');run.add_argument('--config',required=True);run.add_argument('--output',required=True);run.add_argument('--weights',default=str(ROOT/'data/models/yolo11n.pt'));run.add_argument('--device',default='cpu',help='CPU or CUDA device, for example cpu or 0');run.add_argument('--resume',action='store_true',help='reuse verified completed cameras in an interrupted or failed run');run.add_argument('--image-size',type=int,default=640,help='model input size, a multiple of 32')
     review=sub.add_parser('project-review',help='review a completed generic run on loopback');review.add_argument('--output',required=True);review.add_argument('--port',type=int,default=8768)
     calibration=sub.add_parser('project-calibrate',help='fit a plane mapping from matching points');calibration.add_argument('--points',required=True,help='JSON with image_points and plane_points')
     calui=sub.add_parser('project-calibration-ui',help='select calibration points from project videos');calui.add_argument('--config',required=True);calui.add_argument('--port',type=int,default=8769)
@@ -178,7 +178,7 @@ def main(argv=None):
     if args.command=='project-run':
         from walkflows.multicamera_project import build_project
         from walkflows.multicamera_processing import run_project
-        try:result=run_project(build_project(args.config),args.output,args.weights,args.device,resume=args.resume)
+        try:result=run_project(build_project(args.config),args.output,args.weights,args.device,resume=args.resume,image_size=args.image_size)
         except (ValueError,OSError,RuntimeError) as error:print('Project failed: '+str(error),file=sys.stderr);return 1
         print(json.dumps({'status':result['status'],'output':str(Path(args.output).resolve()),'cameras':result['cameras']},indent=2));return 0
     if args.command=='project-validate':

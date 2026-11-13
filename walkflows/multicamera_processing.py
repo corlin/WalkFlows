@@ -82,8 +82,10 @@ def inspect_run(output):
     return {"effective_status": effective, "lock_busy": busy, "journal": state}
 
 
-def run_project(project, output, weights, device="cpu", *, model_factory=None, resume=False):
+def run_project(project, output, weights, device="cpu", *, model_factory=None, resume=False, image_size=640):
     output, weights = Path(output).expanduser().resolve(), Path(weights).expanduser().resolve()
+    if type(image_size) is not int or image_size < 32 or image_size > 4096 or image_size % 32:
+        raise ValueError("image size must be a multiple of 32 between 32 and 4096")
     if not weights.is_file():
         raise ValueError("model weights do not exist")
     if resume:
@@ -97,16 +99,16 @@ def run_project(project, output, weights, device="cpu", *, model_factory=None, r
         except BlockingIOError as exc:
             raise ValueError("another process holds the run lock") from exc
         try:
-            return _run_locked(project, output, weights, device, model_factory, resume)
+            return _run_locked(project, output, weights, device, model_factory, resume, image_size)
         finally:
             fcntl.flock(lock, fcntl.LOCK_UN)
 
 
-def _run_locked(project, output, weights, device, model_factory, resume):
+def _run_locked(project, output, weights, device, model_factory, resume, image_size):
     weights_hash = file_sha256(weights)
     state_path = output / "run.json"
     model_info = {"path": str(weights), "sha256": weights_hash, "device": str(device),
-                  "tracker": "bytetrack.yaml", "confidence": 0.25}
+                  "tracker": "bytetrack.yaml", "confidence": 0.25, "image_size": image_size}
     versions = {name: _version(name) for name in ("ultralytics", "torch", "opencv-python", "numpy")}
     spec = importlib.util.find_spec("ultralytics")
     tracker = Path(spec.origin).parent / "cfg/trackers/bytetrack.yaml" if spec and spec.origin else None
@@ -203,7 +205,7 @@ def _run_locked(project, output, weights, device, model_factory, resume):
                         x0, y0, width, height = roi if roi is not None else (0, 0, source["width"], source["height"])
                         image = frame[y0:y0 + height, x0:x0 + width]
                         result = model.track(image, persist=True, tracker="bytetrack.yaml", classes=[0],
-                                             conf=0.25, device=device, verbose=False)[0]
+                                             conf=0.25, imgsz=image_size, device=device, verbose=False)[0]
                         boxes = result.boxes
                         if boxes is not None:
                             coords = boxes.xyxy.cpu().tolist()

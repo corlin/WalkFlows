@@ -44,7 +44,7 @@ def make_handler(directory):
          "homography": c.get("homography"), "calibration_polygon": c.get("calibration_polygon"),
          "analysis_roi": c.get("analysis_roi"),
          "observations_sha256": results[c["id"]]["observations_sha256"]} for c in sources],
-        "model": {k: run.get("model", {}).get(k) for k in ("sha256", "tracker", "confidence", "device")},
+        "model": {k: run.get("model", {}).get(k) for k in ("sha256", "tracker", "confidence", "device", "image_size")},
         "versions": run.get("versions", {}), "scope": run.get("scope", "")}
     manifest = json.dumps({"name": run["project"].get("name", "WalkFlows"),
                            "timeline": run["project"]["timeline"], "scope": run.get("scope", ""),
