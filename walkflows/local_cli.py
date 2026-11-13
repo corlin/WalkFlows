@@ -110,7 +110,7 @@ def main(argv=None):
     checkcal=sub.add_parser('project-check-calibration',help='evaluate separately supplied check points against a camera mapping');checkcal.add_argument('--config',required=True);checkcal.add_argument('--camera',required=True);checkcal.add_argument('--points',required=True,help='JSON with independent image_points and plane_points')
     calui=sub.add_parser('project-calibration-ui',help='select calibration points from project videos');calui.add_argument('--config',required=True);calui.add_argument('--port',type=int,default=8769);calui.add_argument('--preview-dir',help='verified playback-copy bundle')
     applycal=sub.add_parser('project-apply-calibration',help='create a new project config with a fitted mapping');applycal.add_argument('--config',required=True);applycal.add_argument('--camera',required=True);applycal.add_argument('--points',required=True);applycal.add_argument('--output',required=True)
-    create=sub.add_parser('project-create',help='create a validated video project');create.add_argument('--name',required=True);create.add_argument('--camera',action='append',required=True,metavar='ID=PATH');create.add_argument('--offset',action='append',default=[],metavar='ID=SECONDS');create.add_argument('--output',required=True)
+    create=sub.add_parser('project-create',help='create a validated video project');create.add_argument('--name',required=True);create.add_argument('--camera',action='append',default=[],metavar='ID=PATH');create.add_argument('--normalized-camera',action='append',default=[],metavar='ID=DIR',help='completed normalization bundle');create.add_argument('--offset',action='append',default=[],metavar='ID=SECONDS');create.add_argument('--output',required=True)
     runstatus=sub.add_parser('project-status',help='inspect a generic processing run');runstatus.add_argument('--output',required=True)
     evaluate=sub.add_parser('project-evaluate-reference',help='conditional frame-indexed position comparison');evaluate.add_argument('--output',required=True,help='completed run directory');evaluate.add_argument('--reference',required=True);evaluate.add_argument('--distance',required=True,type=float,help='proximity gate in scene units');evaluate.add_argument('--assume-aligned',action='store_true',required=True,help='assert reference uses the same frame zero and coordinates');evaluate.add_argument('--report',help='write a new JSON report')
     offsets=sub.add_parser('project-apply-offsets',help='create a validated project using timing offsets');offsets.add_argument('--config',required=True);offsets.add_argument('--offsets',required=True);offsets.add_argument('--output',required=True)
@@ -169,6 +169,14 @@ def main(argv=None):
             for spec in args.camera:
                 if '=' not in spec:raise ValueError('camera must use ID=PATH')
                 cid,path=spec.split('=',1);cameras.append({'id':cid,'path':path})
+            for spec in args.normalized_camera:
+                if '=' not in spec:raise ValueError('normalized camera must use ID=DIR')
+                cid,directory=spec.split('=',1)
+                if not directory.strip():raise ValueError('normalization directory required')
+                root=Path(directory).expanduser().resolve()
+                cameras.append({'id':cid,'path':str(root/'normalized.mp4'),
+                                'normalization_manifest':str(root/'manifest.json')})
+            if not cameras:raise ValueError('at least one camera required')
             offsets={}
             for spec in args.offset:
                 if '=' not in spec:raise ValueError('offset must use ID=SECONDS')

@@ -93,6 +93,8 @@ def apply_calibration(config_path, camera_id, points_path, output_path):
         if not isinstance(camera.get("path"), str) or not camera["path"]:
             raise ValueError("invalid camera path")
         camera["path"] = str((config_path.parent / Path(camera["path"]).expanduser()).resolve())
+        if "normalization_manifest" in camera:
+            camera["normalization_manifest"]=str((config_path.parent / Path(camera["normalization_manifest"]).expanduser()).resolve())
     matches[0]["homography"] = result["homography"]
     matches[0]["calibration_polygon"] = result["calibration_polygon"]
     matches[0]["calibration_provenance"] = {

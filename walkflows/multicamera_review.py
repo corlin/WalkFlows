@@ -100,6 +100,7 @@ def make_handler(directory, preview_dir=None):
                         "fps": camera["video"]["fps"], "width": camera["video"]["width"],
                         "height": camera["video"]["height"], "codec_fourcc": camera["video"].get("codec_fourcc"),
                         "calibrated": camera["homography"] is not None,
+                        "normalized_analysis_input":bool(camera.get("normalization")),
                         "frames": info["decoded_frames"], "observations": info["observations"],
                         "frame_count_matches_metadata": info.get("frame_count_matches_metadata")})
     if not cameras:
@@ -112,6 +113,7 @@ def make_handler(directory, preview_dir=None):
         {"id": c["id"], "sha256": c["video"]["sha256"], "offset_seconds": c["offset_seconds"],
          "homography": c.get("homography"), "calibration_polygon": c.get("calibration_polygon"),
          "analysis_roi": c.get("analysis_roi"),
+         "normalization": ({k:c["normalization"].get(k) for k in ("source_sha256","output_sha256","manifest_sha256","ffmpeg_sha256","requested_fps")} if c.get("normalization") else None),
          "observations_sha256": results[c["id"]]["observations_sha256"]} for c in sources],
         "model": {k: run.get("model", {}).get(k) for k in ("sha256", "tracker", "confidence", "device", "image_size")},
         "versions": run.get("versions", {}), "scope": run.get("scope", ""),
@@ -181,6 +183,7 @@ def make_calibration_handler(project, preview_dir=None):
         revisions["/video/" + cid] = revision
         cameras.append({"id": cid, "video_revision": revision,
                         "video_source": "transcoded_preview" if preview else "original",
+                        "normalized_analysis_input":bool(camera.get("normalization")),
                         "width": camera["video"]["width"],
                         "height": camera["video"]["height"],
                         "offset_seconds": camera["offset_seconds"],

@@ -79,7 +79,7 @@ node scripts/compare_site03_direct_pose_events.js
 处理前还可使用 `project-check-timing --video /path/original --preview /path/playback-copy` 完整检查帧时间；无预览时可省略后一个参数。项目仍使用标称帧率，时间不规则时需特别核验，详见 [时间检查说明](desc/80-generic-import-work.md)。
 
 
-若需为现有恒帧率处理链准备输入，可显式运行 `project-normalize-video --video /path/original --fps 15 --destination /path/new-camera`，再将生成的 `normalized.mp4` 用于创建项目；帧率仅为示例。该操作可能复制或丢弃帧，并重置起始时间，需要重新核对相机偏移与画面，原视频不会被覆盖。完整流程和溯源说明见 [通用导入工作记录](desc/80-generic-import-work.md)。
+若需为现有恒帧率处理链准备输入，可显式运行 `project-normalize-video --video /path/original --fps 15 --destination /path/new-camera`，再通过 `project-create --normalized-camera camera1=/path/new-camera` 创建项目并保留来源指纹；帧率仅为示例。该操作可能复制或丢弃帧，并重置起始时间，需要重新核对相机偏移与画面，原视频不会被覆盖。完整流程和溯源说明见 [通用导入工作记录](desc/80-generic-import-work.md)。
 
 ## 数据与许可
 

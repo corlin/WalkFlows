@@ -55,6 +55,7 @@ fetch("/manifest.json").then(r=>{if(!r.ok)throw Error();return r.json();}).then(
     const current=document.createElement("span");current.textContent="本视频 0.00 秒";panel.append(label,current);
     const warning=document.createElement("p");warning.className="note";
     warning.textContent=camera.video_source==="transcoded_preview"?"使用转码预览副本；逐帧时间戳尚未校验，需结合原视频确认时间对齐。":"";
+    if(camera.normalized_analysis_input) warning.textContent+=" 分析输入经过恒帧率重采样，需重新核对时间。";
     video.onerror=()=>{warning.textContent="视频无法播放：请检查格式或编码。";};
     input.oninput=calculate;card.append(head,stage,panel,warning);$("cameras").append(card);
     cards.push({id:camera.id,duration:camera.duration_seconds,input,video,current});

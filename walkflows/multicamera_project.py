@@ -37,6 +37,33 @@ def _video(path):
             "frame_count": frames, "duration_seconds": frames / fps, "codec_fourcc": codec, "sha256": digest.hexdigest()}
 
 
+def _normalization_metadata(manifest_path, video):
+    manifest_path=Path(manifest_path).resolve(strict=True)
+    content=manifest_path.read_bytes()
+    manifest=json.loads(content)
+    state=json.loads((manifest_path.parent/"state.json").read_text(encoding="utf-8"))
+    if (not isinstance(manifest,dict) or manifest.get("schema_version")!=1 or
+            not isinstance(state,dict) or state.get("status")!="completed" or
+            (manifest_path.parent/"normalized.mp4").resolve()!=Path(video["path"]).resolve()):
+        raise ValueError("invalid normalization bundle")
+    source=manifest.get("source");output=manifest.get("output")
+    if not isinstance(source,dict) or not isinstance(output,dict):
+        raise ValueError("invalid normalization manifest")
+    source_sha=source.get("sha256");output_sha=output.get("sha256");ffmpeg_sha=manifest.get("ffmpeg_sha256")
+    if (not all(isinstance(x,str) and re.fullmatch(r"[0-9a-f]{64}",x) for x in (source_sha,output_sha,ffmpeg_sha))
+            or source.get("source_sha256")!=source_sha or output_sha!=video["sha256"]
+            or output.get("source_sha256")!=output_sha or type(output.get("frames")) is not int
+            or output["frames"]<=0 or output["frames"]!=video["frame_count"]):
+        raise ValueError("normalization hash mismatch")
+    fps=manifest.get("requested_fps")
+    if (isinstance(fps,bool) or not isinstance(fps,(int,float)) or not math.isfinite(fps)
+            or not math.isclose(fps,video["fps"],rel_tol=.00001,abs_tol=.00001)):
+        raise ValueError("normalization frame rate mismatch")
+    return {"source_sha256":source_sha,"output_sha256":output_sha,
+            "manifest_sha256":hashlib.sha256(content).hexdigest(),
+            "ffmpeg_sha256":ffmpeg_sha,"requested_fps":fps}
+
+
 def build_project(config_path, *, allow_no_overlap=False):
     config_path = Path(config_path).expanduser().resolve()
     config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -92,9 +119,17 @@ def build_project(config_path, *, allow_no_overlap=False):
             x, y, width, height = roi
             if x < 0 or y < 0 or width <= 0 or height <= 0 or x + width > video["width"] or y + height > video["height"]:
                 raise ValueError("analysis roi outside video")
-        cameras.append({"id": camera_id, "offset_seconds": offset, "homography": homography,
-                        "calibration_polygon": polygon, "calibration_provenance": item.get("calibration_provenance"),
-                        "analysis_roi": roi, "video": video})
+        entry={"id": camera_id, "offset_seconds": offset, "homography": homography,
+               "calibration_polygon": polygon, "calibration_provenance": item.get("calibration_provenance"),
+               "analysis_roi": roi, "video": video}
+        manifest=item.get("normalization_manifest")
+        if manifest is not None:
+            if not isinstance(manifest,str) or not manifest.strip():
+                raise ValueError("invalid normalization manifest path")
+            try:entry["normalization"]=_normalization_metadata(config_path.parent/Path(manifest).expanduser(),video)
+            except (OSError,ValueError,TypeError,KeyError) as exc:
+                raise ValueError("invalid normalization provenance: "+str(exc)) from exc
+        cameras.append(entry)
     start = max(c["offset_seconds"] for c in cameras)
     end = min(c["offset_seconds"] + c["video"]["duration_seconds"] for c in cameras)
     if end <= start and not allow_no_overlap:
@@ -119,6 +154,8 @@ def create_config(name, cameras, output_path):
             raise ValueError("camera video path required")
         item = dict(camera)
         item["path"] = str(Path(item["path"]).expanduser().resolve())
+        if "normalization_manifest" in item:
+            item["normalization_manifest"]=str(Path(item["normalization_manifest"]).expanduser().resolve())
         normalized.append(item)
     config = {"name": name, "cameras": normalized}
     content = json.dumps(config, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
@@ -158,6 +195,8 @@ def apply_offsets(config_path, offsets_path, output_path):
         if not isinstance(path, str) or not path.strip():
             raise ValueError("camera video path required")
         camera["path"] = str((config_path.parent / Path(path).expanduser()).resolve())
+        if "normalization_manifest" in camera:
+            camera["normalization_manifest"]=str((config_path.parent / Path(camera["normalization_manifest"]).expanduser()).resolve())
         if camera.get("id") in offsets:
             camera["offset_seconds"] = offsets[camera["id"]]
     content = json.dumps(config, indent=2, ensure_ascii=False, allow_nan=False) + "\n"

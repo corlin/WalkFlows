@@ -50,6 +50,7 @@ class ReviewTest(unittest.TestCase):
             data = {"status": "completed", "scope": "unverified", "project": {
                 "name": "test", "timeline": {"start_seconds": 0, "end_seconds": 1},
                 "cameras": [{"id": "a", "offset_seconds": 0, "homography": None,
+                             "normalization": {"source_sha256": "a"*64, "output_sha256": file_sha256(video), "manifest_sha256": "b"*64, "ffmpeg_sha256": "c"*64, "requested_fps": 5},
                              "video": {"path": str(video), "sha256": file_sha256(video),
                                        "fps": 5, "width": 64, "height": 48}}]},
                 "cameras": [{"id": "a", "status": "completed", "decoded_frames": 5,
@@ -62,6 +63,8 @@ class ReviewTest(unittest.TestCase):
             try:
                 manifest = json.load(urllib.request.urlopen(base + "/manifest.json"))
                 self.assertNotIn(str(root), json.dumps(manifest))
+                self.assertEqual(manifest["provenance"]["source_videos"][0]["normalization"]["source_sha256"],"a"*64)
+                self.assertTrue(manifest["cameras"][0]["normalized_analysis_input"])
                 self.assertEqual(manifest["provenance"]["source_videos"][0]["sha256"], file_sha256(video))
                 self.assertEqual(manifest["provenance"]["source_videos"][0]["observations_sha256"], file_sha256(root / "a.csv"))
                 with urllib.request.urlopen(base + "/video/a?cache=1") as response:
