@@ -84,3 +84,11 @@ class MulticameraProjectTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "video"):
             create_config("Test", [{"id": "a", "path": str(self.root / "missing.mp4")}], bad)
         self.assertFalse(bad.exists())
+
+    def test_analysis_roi_is_validated_against_video_dimensions(self):
+        self.write([{"id":"a","path":"one.avi","analysis_roi":[10,5,40,30]}])
+        camera=build_project(self.config)["cameras"][0]
+        self.assertEqual(camera["analysis_roi"],[10,5,40,30])
+        for roi in ([10,5,60,30], [1.5,0,10,10], [0,0,0,10]):
+            self.write([{"id":"a","path":"one.avi","analysis_roi":roi}])
+            with self.assertRaisesRegex(ValueError,"roi"): build_project(self.config)

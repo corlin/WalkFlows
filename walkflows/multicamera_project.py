@@ -78,9 +78,18 @@ def build_project(config_path):
                 polygon = contour.astype(float).tolist()
             except (TypeError, ValueError, cv2.error) as exc:
                 raise ValueError("invalid calibration polygon") from exc
+        video = _video(path)
+        roi = item.get("analysis_roi")
+        if roi is not None:
+            if (not isinstance(roi, list) or len(roi) != 4 or
+                    any(type(v) is not int for v in roi)):
+                raise ValueError("invalid analysis roi")
+            x, y, width, height = roi
+            if x < 0 or y < 0 or width <= 0 or height <= 0 or x + width > video["width"] or y + height > video["height"]:
+                raise ValueError("analysis roi outside video")
         cameras.append({"id": camera_id, "offset_seconds": offset, "homography": homography,
                         "calibration_polygon": polygon, "calibration_provenance": item.get("calibration_provenance"),
-                        "video": _video(path)})
+                        "analysis_roi": roi, "video": video})
     start = max(c["offset_seconds"] for c in cameras)
     end = min(c["offset_seconds"] + c["video"]["duration_seconds"] for c in cameras)
     if end <= start:

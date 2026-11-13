@@ -199,7 +199,10 @@ def _run_locked(project, output, weights, device, model_factory, resume):
                         if frame.shape[:2] != (source["height"], source["width"]):
                             raise ValueError("video dimensions changed: " + camera["id"])
                         index = entry["decoded_frames"]
-                        result = model.track(frame, persist=True, tracker="bytetrack.yaml", classes=[0],
+                        roi = camera.get("analysis_roi")
+                        x0, y0, width, height = roi if roi is not None else (0, 0, source["width"], source["height"])
+                        image = frame[y0:y0 + height, x0:x0 + width]
+                        result = model.track(image, persist=True, tracker="bytetrack.yaml", classes=[0],
                                              conf=0.25, device=device, verbose=False)[0]
                         boxes = result.boxes
                         if boxes is not None:
@@ -212,6 +215,8 @@ def _run_locked(project, output, weights, device, model_factory, resume):
                                 if len(box) != 4 or not all(math.isfinite(float(v)) for v in [*box, score]):
                                     continue
                                 left, top, right, bottom = map(float, box)
+                                left, right = left + x0, right + x0
+                                top, bottom = top + y0, bottom + y0
                                 foot_x, foot_y = (left + right) / 2, bottom
                                 wx, wy = _project(camera["homography"], foot_x, foot_y, camera.get("calibration_polygon"))
                                 writer.writerow({"frame": index, "timestamp_s": camera["offset_seconds"] + index / source["fps"],

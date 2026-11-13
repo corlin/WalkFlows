@@ -42,6 +42,7 @@ def make_handler(directory):
     provenance = {"source_videos": [
         {"id": c["id"], "sha256": c["video"]["sha256"], "offset_seconds": c["offset_seconds"],
          "homography": c.get("homography"), "calibration_polygon": c.get("calibration_polygon"),
+         "analysis_roi": c.get("analysis_roi"),
          "observations_sha256": results[c["id"]]["observations_sha256"]} for c in sources],
         "model": {k: run.get("model", {}).get(k) for k in ("sha256", "tracker", "confidence", "device")},
         "versions": run.get("versions", {}), "scope": run.get("scope", "")}

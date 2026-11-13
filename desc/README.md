@@ -153,3 +153,5 @@ WalkFlows 将多摄像头人员轨迹转换为门店空间触点和客户旅程�
 - [Generic multicamera input validation](80-generic-import-work.md)
 
 - [Wi-Fi sensing and localization research](81-wifi-sensing-research.md)
+
+- [Generic reference comparison](82-generic-reference-evaluation.md)

@@ -149,3 +149,25 @@ class ProcessingTest(unittest.TestCase):
                 self.assertEqual(inspect_run(root)["effective_status"],"running")
             (root/"run.json").write_text(json.dumps({"status":"running","cameras":[]}))
             self.assertEqual(inspect_run(root)["effective_status"],"unknown")
+
+    def test_roi_inference_translates_boxes_to_original_frame(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);video=root/"a.avi"
+            writer=cv2.VideoWriter(str(video),cv2.VideoWriter_fourcc(*"MJPG"),5,(64,48))
+            if not writer.isOpened(): self.skipTest("MJPG unavailable")
+            writer.write(np.zeros((48,64,3),np.uint8));writer.release()
+            config=root/"config.json"
+            config.write_text(json.dumps({"cameras":[{"id":"a","path":"a.avi","analysis_roi":[10,0,54,48],
+                                                        "homography":[[1,0,0],[0,1,0],[0,0,1]]}]}))
+            weights=root/"w.pt";weights.write_bytes(b"weights")
+            class CheckROI(FakeModel):
+                def track(self,frame,**kwargs):
+                    self.shape=frame.shape
+                    return super().track(frame,**kwargs)
+            model=CheckROI()
+            out=root/"out"
+            run_project(build_project(config),out,weights,model_factory=lambda _:model)
+            self.assertEqual(model.shape[:2],(48,54))
+            with (out/"a.csv").open() as f: row=next(csv.DictReader(f))
+            self.assertEqual(float(row["left"]),20)
+            self.assertEqual(float(row["world_x"]),30)

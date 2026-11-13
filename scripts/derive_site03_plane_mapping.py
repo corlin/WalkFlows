@@ -81,7 +81,8 @@ def main():
         sensor = json.loads(sensor_path.read_text())["sensor0"]
         matrix, polygon, stats = derive(sensor, transform, scene["hist-aabb"])
         configs.append({"id": camera, "path": str(video), "offset_seconds": 0,
-                        "homography": matrix, "calibration_polygon": polygon})
+                        "homography": matrix, "calibration_polygon": polygon,
+                        "analysis_roi": [0, 0, 896, 672]})
         reports.append({"camera": camera, "sensor_sha256": file_sha256(sensor_path), **stats})
     args.output.mkdir(parents=True, exist_ok=False)
     config = {"name": "site03 sample, approximate left-image calibration", "cameras": configs}

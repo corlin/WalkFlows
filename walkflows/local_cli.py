@@ -111,8 +111,19 @@ def main(argv=None):
     applycal=sub.add_parser('project-apply-calibration',help='create a new project config with a fitted mapping');applycal.add_argument('--config',required=True);applycal.add_argument('--camera',required=True);applycal.add_argument('--points',required=True);applycal.add_argument('--output',required=True)
     create=sub.add_parser('project-create',help='create a validated video project');create.add_argument('--name',required=True);create.add_argument('--camera',action='append',required=True,metavar='ID=PATH');create.add_argument('--offset',action='append',default=[],metavar='ID=SECONDS');create.add_argument('--output',required=True)
     runstatus=sub.add_parser('project-status',help='inspect a generic processing run');runstatus.add_argument('--output',required=True)
+    evaluate=sub.add_parser('project-evaluate-reference',help='conditional frame-indexed position comparison');evaluate.add_argument('--output',required=True,help='completed run directory');evaluate.add_argument('--reference',required=True);evaluate.add_argument('--distance',required=True,type=float,help='proximity gate in scene units');evaluate.add_argument('--assume-aligned',action='store_true',required=True,help='assert reference uses the same frame zero and coordinates');evaluate.add_argument('--report',help='write a new JSON report')
     args=parser.parse_args(argv)
     if os.geteuid()==0:print('Direct root execution is prohibited; use the WSL non-root user.',file=sys.stderr);return 1
+    if args.command=='project-evaluate-reference':
+        from walkflows.generic_reference import evaluate_run
+        try:
+            result=evaluate_run(args.output,args.reference,args.distance)
+            content=json.dumps(result,ensure_ascii=False,indent=2)
+            if args.report:
+                with Path(args.report).open('x',encoding='utf-8') as file:file.write(content+'\n')
+            print(content)
+        except (ValueError,OSError,KeyError,TypeError,ZeroDivisionError) as error:print('Reference evaluation failed: '+str(error),file=sys.stderr);return 1
+        return 0
     if args.command=='project-status':
         from walkflows.multicamera_processing import inspect_run
         try:result=inspect_run(args.output)
