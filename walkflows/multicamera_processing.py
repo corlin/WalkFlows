@@ -34,8 +34,16 @@ def _project(matrix, x, y, polygon=None):
         return "", ""
     if polygon is not None and cv2.pointPolygonTest(np.asarray(polygon, dtype=np.float32), (x, y), False) < 0:
         return "", ""
-    mapped = np.asarray(matrix) @ np.array([x, y, 1.0])
-    if not np.isfinite(mapped).all() or abs(mapped[2]) < 1e-9:
+    matrix = np.asarray(matrix, dtype=float)
+    scale = np.max(np.abs(matrix))
+    if not np.isfinite(scale) or scale == 0:
+        return "", ""
+    matrix = matrix / scale
+    point = np.array([x, y, 1.0])
+    mapped = matrix @ point
+    denominator_scale = np.linalg.norm(matrix[2]) * np.linalg.norm(point)
+    if (not np.isfinite(mapped).all() or not np.isfinite(denominator_scale)
+            or abs(mapped[2]) <= 1e-12 * denominator_scale):
         return "", ""
     result = mapped[:2] / mapped[2]
     return tuple(map(float, result)) if np.isfinite(result).all() else ("", "")

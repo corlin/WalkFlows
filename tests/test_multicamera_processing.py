@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 
 from walkflows.multicamera_project import build_project
-from walkflows.multicamera_processing import run_project, inspect_run
+from walkflows.multicamera_processing import run_project, inspect_run, _project
 
 
 class Boxes:
@@ -30,6 +30,16 @@ class FakeModel:
 
 
 class ProcessingTest(unittest.TestCase):
+    def test_projective_scale_does_not_change_valid_projection(self):
+        matrix=[[2,0,3],[0,2,4],[0,0,1]]
+        expected=_project(matrix,5,6)
+        self.assertEqual(expected,(13.,16.))
+        for scale in (1e-12, -1e-12, 1e12):
+            actual=_project([[scale*x for x in row] for row in matrix],5,6)
+            self.assertAlmostEqual(actual[0],expected[0])
+            self.assertAlmostEqual(actual[1],expected[1])
+        self.assertEqual(_project([[1,0,0],[0,1,0],[1,0,-5]],5,6),("",""))
+
     def test_two_cameras_isolate_trackers_and_write_projected_observations(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
