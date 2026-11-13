@@ -74,6 +74,13 @@ def make_handler(directory, preview_dir=None):
         info = results.get(cid)
         if not info or info.get("status") != "completed":
             raise ValueError("incomplete camera " + cid)
+        fps = camera["video"]["fps"]
+        offset = camera["offset_seconds"]
+        decoded = info.get("decoded_frames")
+        if (type(decoded) is not int or decoded <= 0 or
+                isinstance(fps, bool) or not isinstance(fps, (int, float)) or not math.isfinite(fps) or fps <= 0 or
+                isinstance(offset, bool) or not isinstance(offset, (int, float)) or not math.isfinite(offset)):
+            raise ValueError("invalid decoded timeline: " + cid)
         video = Path(camera["video"]["path"]).resolve(strict=True)
         csv_path = directory / (cid + ".csv")
         if file_sha256(video) != camera["video"]["sha256"] or file_sha256(csv_path) != info["observations_sha256"]:
@@ -95,6 +102,12 @@ def make_handler(directory, preview_dir=None):
                         "calibrated": camera["homography"] is not None,
                         "frames": info["decoded_frames"], "observations": info["observations"],
                         "frame_count_matches_metadata": info.get("frame_count_matches_metadata")})
+    if not cameras:
+        raise ValueError("no camera results")
+    timeline = {"start_seconds": max(c["offset_seconds"] for c in cameras),
+                "end_seconds": min(c["offset_seconds"] + c["frames"] / c["fps"] for c in cameras)}
+    if timeline["end_seconds"] <= timeline["start_seconds"]:
+        raise ValueError("decoded videos have no temporal overlap")
     provenance = {"source_videos": [
         {"id": c["id"], "sha256": c["video"]["sha256"], "offset_seconds": c["offset_seconds"],
          "homography": c.get("homography"), "calibration_polygon": c.get("calibration_polygon"),
@@ -104,7 +117,7 @@ def make_handler(directory, preview_dir=None):
         "versions": run.get("versions", {}), "scope": run.get("scope", ""),
         "playback_previews": [{"id":cid,"preview_sha256":item["preview_sha256"]} for cid,item in previews.items()]}
     manifest = json.dumps({"name": run["project"].get("name", "WalkFlows"),
-                           "timeline": run["project"]["timeline"], "scope": run.get("scope", ""),
+                           "timeline": timeline, "scope": run.get("scope", ""),
                            "provenance": provenance, "cameras": cameras}, ensure_ascii=False).encode("utf-8")
 
     class Handler(RangeHandler):

@@ -13,6 +13,34 @@ from walkflows.multicamera_review import make_handler, make_calibration_handler
 
 
 class ReviewTest(unittest.TestCase):
+    def test_review_uses_decoded_frame_overlap_and_rejects_empty_overlap(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            cameras=[]; results=[]
+            for cid,offset,decoded in [("a",0,20),("b",1,5)]:
+                video=root/(cid+".mp4");video.write_bytes(cid.encode())
+                csv=root/(cid+".csv");csv.write_text("frame,timestamp_s,local_id\n")
+                cameras.append({"id":cid,"offset_seconds":offset,"homography":None,
+                    "video":{"path":str(video),"sha256":file_sha256(video),"fps":5,"width":64,"height":48}})
+                results.append({"id":cid,"status":"completed","decoded_frames":decoded,
+                    "observations":0,"observations_sha256":file_sha256(csv),
+                    "frame_count_matches_metadata":False})
+            data={"status":"completed","project":{"timeline":{"start_seconds":1,"end_seconds":10},
+                  "cameras":cameras},"cameras":results}
+            (root/"run.json").write_text(json.dumps(data))
+            server=ThreadingHTTPServer(("127.0.0.1",0),make_handler(root))
+            thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+            try:
+                manifest=json.load(urllib.request.urlopen("http://127.0.0.1:"+str(server.server_port)+"/manifest.json"))
+                self.assertEqual(manifest["timeline"],{"start_seconds":1,"end_seconds":2})
+                self.assertFalse(manifest["cameras"][1]["frame_count_matches_metadata"])
+            finally:
+                server.shutdown();server.server_close();thread.join()
+            cameras[1]["offset_seconds"]=5
+            (root/"run.json").write_text(json.dumps(data))
+            with self.assertRaisesRegex(ValueError,"overlap"):
+                make_handler(root)
+
     def test_verified_assets_are_served_and_other_files_are_not(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
