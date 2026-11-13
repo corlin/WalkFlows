@@ -62,7 +62,7 @@ class ReviewTest(unittest.TestCase):
             video = Path(tmp) / "video.mp4"
             video.write_bytes(b"0123456789")
             project = {"name": "test", "cameras": [{"id": "front",
-                "video": {"path": str(video), "sha256": file_sha256(video), "width": 64, "height": 48}}]}
+                "offset_seconds":0.3,"video": {"path": str(video), "sha256": file_sha256(video), "width": 64, "height": 48, "duration_seconds":2}}]}
             server = ThreadingHTTPServer(("127.0.0.1", 0), make_calibration_handler(project))
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
@@ -70,6 +70,10 @@ class ReviewTest(unittest.TestCase):
             try:
                 data = json.load(urllib.request.urlopen(base + "/manifest.json"))
                 self.assertEqual(data["cameras"][0]["id"], "front")
+                self.assertEqual(data["cameras"][0]["offset_seconds"], 0.3)
+                self.assertEqual(data["cameras"][0]["duration_seconds"], 2)
+                with urllib.request.urlopen(base + "/sync") as response:
+                    self.assertEqual(response.status, 200)
                 self.assertNotIn(str(video), json.dumps(data))
                 with urllib.request.urlopen(base + "/video/front") as response:
                     self.assertEqual(response.read(), b"0123456789")

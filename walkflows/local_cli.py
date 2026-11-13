@@ -112,6 +112,7 @@ def main(argv=None):
     create=sub.add_parser('project-create',help='create a validated video project');create.add_argument('--name',required=True);create.add_argument('--camera',action='append',required=True,metavar='ID=PATH');create.add_argument('--offset',action='append',default=[],metavar='ID=SECONDS');create.add_argument('--output',required=True)
     runstatus=sub.add_parser('project-status',help='inspect a generic processing run');runstatus.add_argument('--output',required=True)
     evaluate=sub.add_parser('project-evaluate-reference',help='conditional frame-indexed position comparison');evaluate.add_argument('--output',required=True,help='completed run directory');evaluate.add_argument('--reference',required=True);evaluate.add_argument('--distance',required=True,type=float,help='proximity gate in scene units');evaluate.add_argument('--assume-aligned',action='store_true',required=True,help='assert reference uses the same frame zero and coordinates');evaluate.add_argument('--report',help='write a new JSON report')
+    offsets=sub.add_parser('project-apply-offsets',help='create a validated project using timing offsets');offsets.add_argument('--config',required=True);offsets.add_argument('--offsets',required=True);offsets.add_argument('--output',required=True)
     args=parser.parse_args(argv)
     if os.geteuid()==0:print('Direct root execution is prohibited; use the WSL non-root user.',file=sys.stderr);return 1
     if args.command=='project-evaluate-reference':
@@ -124,6 +125,11 @@ def main(argv=None):
             print(content)
         except (ValueError,OSError,KeyError,TypeError,ZeroDivisionError) as error:print('Reference evaluation failed: '+str(error),file=sys.stderr);return 1
         return 0
+    if args.command=='project-apply-offsets':
+        from walkflows.multicamera_project import apply_offsets
+        try:result=apply_offsets(args.config,args.offsets,args.output)
+        except (ValueError,OSError,KeyError,TypeError) as error:print('Cannot apply offsets: '+str(error),file=sys.stderr);return 1
+        print(json.dumps(result,ensure_ascii=False,indent=2));return 0
     if args.command=='project-status':
         from walkflows.multicamera_processing import inspect_run
         try:result=inspect_run(args.output)
@@ -155,7 +161,7 @@ def main(argv=None):
     if args.command=='project-calibration-ui':
         from walkflows.multicamera_project import build_project
         from walkflows.multicamera_review import serve_calibration
-        try:serve_calibration(build_project(args.config),args.port)
+        try:serve_calibration(build_project(args.config,allow_no_overlap=True),args.port)
         except (ValueError,OSError,KeyError) as error:print('Cannot open calibration: '+str(error),file=sys.stderr);return 1
         return 0
     if args.command=='project-calibrate':

@@ -6,7 +6,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from walkflows.multicamera_project import build_project, create_config
+from walkflows.multicamera_project import build_project, create_config, apply_offsets
 
 
 class MulticameraProjectTest(unittest.TestCase):
@@ -92,3 +92,24 @@ class MulticameraProjectTest(unittest.TestCase):
         for roi in ([10,5,60,30], [1.5,0,10,10], [0,0,0,10]):
             self.write([{"id":"a","path":"one.avi","analysis_roi":roi}])
             with self.assertRaisesRegex(ValueError,"roi"): build_project(self.config)
+
+    def test_apply_offsets_validates_and_preserves_original(self):
+        self.write([{"id":"a","path":"one.avi"},{"id":"b","path":"two.avi"}])
+        original=self.config.read_text()
+        offsets=self.root/"offsets.json"
+        offsets.write_text(json.dumps({"offsets":{"b":0.2}}))
+        out=self.root/"new.json"
+        result=apply_offsets(self.config,offsets,out)
+        self.assertAlmostEqual(result["timeline"]["start_seconds"],0.2)
+        self.assertEqual(self.config.read_text(),original)
+        saved=json.loads(out.read_text())
+        self.assertEqual(saved["cameras"][1]["offset_seconds"],0.2)
+        self.assertTrue(Path(saved["cameras"][0]["path"]).is_absolute())
+        with self.assertRaises(FileExistsError): apply_offsets(self.config,offsets,out)
+        bad=self.root/"bad.json"
+        offsets.write_text(json.dumps({"offsets":{"b":2}}))
+        with self.assertRaisesRegex(ValueError,"overlap"): apply_offsets(self.config,offsets,bad)
+        self.assertFalse(bad.exists())
+        self.write([{"id":"a","path":"one.avi"},{"id":"b","path":"two.avi","offset_seconds":2}])
+        self.assertGreater(build_project(self.config,allow_no_overlap=True)["timeline"]["start_seconds"],
+                           build_project(self.config,allow_no_overlap=True)["timeline"]["end_seconds"])

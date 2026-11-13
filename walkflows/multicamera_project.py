@@ -32,7 +32,7 @@ def _video(path):
             "frame_count": frames, "duration_seconds": frames / fps, "sha256": digest.hexdigest()}
 
 
-def build_project(config_path):
+def build_project(config_path, *, allow_no_overlap=False):
     config_path = Path(config_path).expanduser().resolve()
     config = json.loads(config_path.read_text(encoding="utf-8"))
     if not isinstance(config, dict) or not isinstance(config.get("cameras"), list) or not config["cameras"]:
@@ -92,7 +92,7 @@ def build_project(config_path):
                         "analysis_roi": roi, "video": video})
     start = max(c["offset_seconds"] for c in cameras)
     end = min(c["offset_seconds"] + c["video"]["duration_seconds"] for c in cameras)
-    if end <= start:
+    if end <= start and not allow_no_overlap:
         raise ValueError("camera videos have no temporal overlap")
     return {"schema_version": 1, "name": config.get("name", config_path.stem),
             "source_config": str(config_path), "cameras": cameras,
@@ -116,6 +116,45 @@ def create_config(name, cameras, output_path):
         item["path"] = str(Path(item["path"]).expanduser().resolve())
         normalized.append(item)
     config = {"name": name, "cameras": normalized}
+    content = json.dumps(config, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
+    with tempfile.TemporaryDirectory(prefix=".walkflows-validate-", dir=output_path.parent) as tmp:
+        candidate = Path(tmp) / "project.json"
+        candidate.write_text(content, encoding="utf-8")
+        result = build_project(candidate)
+    with output_path.open("x", encoding="utf-8") as target:
+        target.write(content)
+    result["source_config"] = str(output_path)
+    return result
+
+
+
+def apply_offsets(config_path, offsets_path, output_path):
+    """Apply user-supplied time offsets to a new validated project file."""
+    config_path = Path(config_path).expanduser().resolve()
+    offsets_path = Path(offsets_path).expanduser().resolve()
+    output_path = Path(output_path).expanduser().resolve()
+    if output_path.exists():
+        raise FileExistsError(str(output_path))
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    offsets = json.loads(offsets_path.read_text(encoding="utf-8")).get("offsets")
+    cameras = config.get("cameras")
+    if not isinstance(cameras, list) or not all(isinstance(c, dict) for c in cameras):
+        raise ValueError("invalid cameras")
+    if not isinstance(offsets, dict):
+        raise ValueError("invalid offsets")
+    ids = {c.get("id") for c in cameras}
+    if set(offsets) - ids:
+        raise ValueError("offset references unknown camera")
+    for key, value in offsets.items():
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            raise ValueError("invalid camera offset")
+    for camera in cameras:
+        path = camera.get("path")
+        if not isinstance(path, str) or not path.strip():
+            raise ValueError("camera video path required")
+        camera["path"] = str((config_path.parent / Path(path).expanduser()).resolve())
+        if camera.get("id") in offsets:
+            camera["offset_seconds"] = offsets[camera["id"]]
     content = json.dumps(config, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
     with tempfile.TemporaryDirectory(prefix=".walkflows-validate-", dir=output_path.parent) as tmp:
         candidate = Path(tmp) / "project.json"

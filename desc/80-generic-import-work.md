@@ -80,3 +80,9 @@ A browser check confirmed that the six generated MJPEG AVI smoke clips are not p
 `project-status --output /path/to/run` 显示日志和锁状态；持锁可证实运行中，而无锁且原进程不存在时标记为中断或遗弃，无法判定时显示 unknown。失败或中断后，可对相同配置执行 `project-run --config /path/to/project.json --output /path/to/run --device cpu --resume`。续跑要求项目、视频、模型、设备参数、依赖版本、处理代码和 tracker 配置一致，并重新核验已完成相机 CSV 的哈希；通过后只重跑未完成的相机。运行锁防止同一目录并发写入。
 
 结果先写临时文件，再以不覆盖现有文件的方式发布；意外崩溃可能留下 .part 文件或未登记 CSV，这类未确认文件不会被自动覆盖，需保留现场并另选输出目录处理。仅支持相机粒度续跑，不恢复单路视频中的帧级 tracker 状态。此前版本创建且缺少必要版本或进程信息的运行可能不能安全续跑。测试覆盖失败后复用、锁竞争、结果篡改、配置变化及不明文件保护；已有输出或校验失败不会被当作可靠缓存。
+
+### 处理前的时间对齐预览（2026-11-13）
+
+启动 `project-calibration-ui --config /path/project.json --port 8769` 后，在标定页面进入“时间对齐预览”，或打开 http://127.0.0.1:8769/sync 。各路偏移表示视频首帧在共同时间轴上的秒数；共同范围为各路区间的交集。页面可调整偏移、拖动共同时间和近似同步播放；无共同范围时禁止播放及下载。下载的 JSON 可通过 `project-apply-offsets --config /path/project.json --offsets /path/walkflows-offsets.json --output /path/timed-project.json` 写入新配置，命令重新验证视频和交集，不覆盖已有文件。即使原配置无重叠，也允许打开预览以调整，但不能用于直接处理。
+
+六路样本浏览器检查了偏移 1.25 秒时的共同范围、100 秒导致无交集的提示和恢复播放；使用一份 0.2 秒测试偏移验证了六路新配置生成。上述数值仅用于测试，不是样本实际校正。视频时长来自帧数与标称帧率；变帧率、视频解码延迟及浏览器时钟可能使画面不同步，预览不证明曝光或帧级同步。需要用户通过共同可见事件验证，并为实际录像确定偏移。

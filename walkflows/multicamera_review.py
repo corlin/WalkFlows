@@ -87,7 +87,7 @@ def serve(directory, port):
 def make_calibration_handler(project):
     """Expose only project videos and a sanitized calibration interface."""
     paths = {"/": WEB / "calibrate.html", "/calibrate.js": WEB / "calibrate.js",
-             "/style.css": WEB / "style.css"}
+             "/sync": WEB / "sync.html", "/sync.js": WEB / "sync.js", "/style.css": WEB / "style.css"}
     cameras = []
     seen = set()
     for camera in project["cameras"]:
@@ -101,7 +101,9 @@ def make_calibration_handler(project):
             raise ValueError("video hash mismatch: " + cid)
         paths["/video/" + cid] = video
         cameras.append({"id": cid, "width": camera["video"]["width"],
-                        "height": camera["video"]["height"]})
+                        "height": camera["video"]["height"],
+                        "offset_seconds": camera["offset_seconds"],
+                        "duration_seconds": camera["video"]["duration_seconds"]})
     manifest = json.dumps({"name": project.get("name", "WalkFlows"), "cameras": cameras},
                           ensure_ascii=False).encode("utf-8")
 
