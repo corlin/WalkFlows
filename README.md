@@ -38,7 +38,7 @@ status 显示输入与回放包的来源状态，不执行 GPU 健康检查。bu
 
 ## 通用多摄像头流程（开发中）
 
-推荐从统一入口开始，以下为两路示例，5–6 路时继续添加 `--camera ID=路径`：
+推荐从统一入口开始，以下为两路示例；目标店铺可能只有 1–3 路或 3–5 路，需要更多镜头时继续添加 `--camera ID=路径`：
 
 ~~~bash
 .venv/bin/python -m walkflows project-workflow --name Room \
@@ -67,7 +67,7 @@ status 显示输入与回放包的来源状态，不执行 GPU 健康检查。bu
 .venv/bin/python -m walkflows project-review --output /path/run --port 8768
 ~~~
 
-下载到 Windows 的对应点文件须先使用 WSL 可访问的路径，例如 `/mnt/c/Users/.../Downloads/...`；不要把示例坐标当作实际场地。录像偏移、平面坐标和对应点须根据实际场地确定；没有标定时仍可查看单镜观察。结果包含近邻候选、区域事件和观察热度，但跨镜身份、去重人数及事件准确率尚未验证。浏览器不支持的编码可能无法播放。续跑和标定方法见 [通用流程](desc/80-generic-import-work.md)，参考邻近对照见 [评估记录](desc/82-generic-reference-evaluation.md)。该流程尚未完成下一阶段 MVP 的全部验收。
+下载到 Windows 的对应点文件须先使用 WSL 可访问的路径，例如 `/mnt/c/Users/.../Downloads/...`；不要把示例坐标当作实际场地。录像偏移、平面坐标和对应点须根据实际场地确定；没有标定时仍可查看单镜观察。结果包含近邻候选、区域事件和观察热度，但跨镜身份、去重人数及事件准确率尚未验证。浏览器不支持的编码可能无法播放。续跑和标定方法见 [通用流程](desc/80-generic-import-work.md)，参考邻近对照见 [评估记录](desc/82-generic-reference-evaluation.md)。已有操作验收使用两组六路样本；1、3、5 路的代表性操作验收尚待完成。该流程尚未完成下一阶段 MVP 的全部验收。
 
 ## 可选：直接姿态跟踪实验
 
