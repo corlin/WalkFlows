@@ -163,3 +163,5 @@ WalkFlows 将多摄像头人员轨迹转换为门店空间触点和客户旅程�
 - [Reference zone-flow evaluation](85-reference-zone-flow-evaluation.md)
 
 - [Detection threshold and tracking diagnostic](86-detection-threshold-diagnostic.md)
+
+- [Site04 046 cross-scene diagnostic](87-site04-046-diagnostic.md)
