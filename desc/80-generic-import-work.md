@@ -86,3 +86,18 @@ A browser check confirmed that the six generated MJPEG AVI smoke clips are not p
 启动 `project-calibration-ui --config /path/project.json --port 8769` 后，在标定页面进入“时间对齐预览”，或打开 http://127.0.0.1:8769/sync 。各路偏移表示视频首帧在共同时间轴上的秒数；共同范围为各路区间的交集。页面可调整偏移、拖动共同时间和近似同步播放；无共同范围时禁止播放及下载。下载的 JSON 可通过 `project-apply-offsets --config /path/project.json --offsets /path/walkflows-offsets.json --output /path/timed-project.json` 写入新配置，命令重新验证视频和交集，不覆盖已有文件。即使原配置无重叠，也允许打开预览以调整，但不能用于直接处理。
 
 六路样本浏览器检查了偏移 1.25 秒时的共同范围、100 秒导致无交集的提示和恢复播放；使用一份 0.2 秒测试偏移验证了六路新配置生成。上述数值仅用于测试，不是样本实际校正。视频时长来自帧数与标称帧率；变帧率、视频解码延迟及浏览器时钟可能使画面不同步，预览不证明曝光或帧级同步。需要用户通过共同可见事件验证，并为实际录像确定偏移。
+
+### 浏览器预览与结果缓存（2026-11-13）
+
+部分 AVI 等录像可以由处理引擎解码，但浏览器不能直接播放。可安装可选依赖 `uv pip install --python .venv/bin/python '.[preview]'`（或使用已有 FFmpeg），然后在处理之前创建播放副本：
+
+```bash
+.venv/bin/python -m walkflows project-preview-videos --config /path/project.json --destination /path/new-preview
+.venv/bin/python -m walkflows project-calibration-ui --config /path/project.json --preview-dir /path/new-preview
+.venv/bin/python -m walkflows project-run --config /path/project.json --output /path/new-run --device cpu
+.venv/bin/python -m walkflows project-review --output /path/new-run --preview-dir /path/new-preview
+```
+
+也可对已完成的运行使用 `project-preview-videos --output /path/new-run --destination /path/new-preview`。副本目录必须不存在，失败可能留下部分文件和状态记录供检查；不会覆盖原视频。预览转为 H.264、无音轨，校验源文件和副本哈希、解码帧数、尺寸及标称帧率；**未逐帧核对时间戳**，变帧率或转码时间变化可能影响对齐与叠框，须对照原片核验。处理和推理仍使用原片；不保证所有输入均可转换或所有浏览器均可播放。预览清单和状态均完成且校验通过才可使用。可选 imageio-ffmpeg 提供的 FFmpeg 二进制及其编码器具有各自许可，参见 [imageio-ffmpeg](https://github.com/imageio/imageio-ffmpeg) 和 [FFmpeg 许可说明](https://ffmpeg.org/legal.html)。
+
+复用同一浏览器地址查看不同运行时，旧视频或观察数据可能被条件缓存复用。现服务端禁用缓存和条件 304，并在视频与观察地址加入内容版本；未标定相机的平面坐标也在界面侧清空。浏览器在同一端口先后打开已标定与未标定样本，后者显示无平面坐标。此检查证明修正后的组合行为，不足以单独证明此前某次显示异常的具体根因。早前依赖浏览器界面观察的演示应在新版本重新核验；独立离线文件计算不因浏览器缓存自动失效。

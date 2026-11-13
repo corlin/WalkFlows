@@ -47,6 +47,16 @@ class ReviewTest(unittest.TestCase):
                 with urllib.request.urlopen(request) as response:
                     self.assertEqual(response.status, 206)
                     self.assertEqual(response.read(), b"234")
+                revision=manifest["cameras"][0]["observations_revision"]
+                req=urllib.request.Request(base + "/observations/a?v=" + revision,
+                    headers={"If-Modified-Since":"Wed, 21 Oct 2099 07:28:00 GMT"})
+                with urllib.request.urlopen(req) as response:
+                    self.assertEqual(response.status,200)
+                    self.assertIn("no-store",response.headers.get("Cache-Control",""))
+                    self.assertIn(b"0,0,1",response.read())
+                with self.assertRaises(urllib.error.HTTPError) as stale:
+                    urllib.request.urlopen(base + "/observations/a?v=incorrect")
+                self.assertEqual(stale.exception.code,409)
                 with self.assertRaises(urllib.error.HTTPError):
                     urllib.request.urlopen(base + "/run.json")
                 (root / "a.csv").write_text("changed")

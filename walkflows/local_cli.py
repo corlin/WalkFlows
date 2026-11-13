@@ -105,14 +105,15 @@ def main(argv=None):
     q=sub.add_parser('serve',help='serve the existing bundle on loopback');q.add_argument('--port',type=int,default=8767)
     project=sub.add_parser('project-validate',help='validate generic local video inputs without running inference');project.add_argument('--config',required=True,help='JSON camera configuration')
     run=sub.add_parser('project-run',help='run sequential per-camera detection and tracking');run.add_argument('--config',required=True);run.add_argument('--output',required=True);run.add_argument('--weights',default=str(ROOT/'data/models/yolo11n.pt'));run.add_argument('--device',default='cpu',help='CPU or CUDA device, for example cpu or 0');run.add_argument('--resume',action='store_true',help='reuse verified completed cameras in an interrupted or failed run');run.add_argument('--image-size',type=int,default=640,help='model input size, a multiple of 32');run.add_argument('--confidence',type=float,default=0.25,help='person detection confidence threshold')
-    review=sub.add_parser('project-review',help='review a completed generic run on loopback');review.add_argument('--output',required=True);review.add_argument('--port',type=int,default=8768)
+    review=sub.add_parser('project-review',help='review a completed generic run on loopback');review.add_argument('--output',required=True);review.add_argument('--port',type=int,default=8768);review.add_argument('--preview-dir',help='verified playback-copy bundle')
     calibration=sub.add_parser('project-calibrate',help='fit a plane mapping from matching points');calibration.add_argument('--points',required=True,help='JSON with image_points and plane_points')
-    calui=sub.add_parser('project-calibration-ui',help='select calibration points from project videos');calui.add_argument('--config',required=True);calui.add_argument('--port',type=int,default=8769)
+    calui=sub.add_parser('project-calibration-ui',help='select calibration points from project videos');calui.add_argument('--config',required=True);calui.add_argument('--port',type=int,default=8769);calui.add_argument('--preview-dir',help='verified playback-copy bundle')
     applycal=sub.add_parser('project-apply-calibration',help='create a new project config with a fitted mapping');applycal.add_argument('--config',required=True);applycal.add_argument('--camera',required=True);applycal.add_argument('--points',required=True);applycal.add_argument('--output',required=True)
     create=sub.add_parser('project-create',help='create a validated video project');create.add_argument('--name',required=True);create.add_argument('--camera',action='append',required=True,metavar='ID=PATH');create.add_argument('--offset',action='append',default=[],metavar='ID=SECONDS');create.add_argument('--output',required=True)
     runstatus=sub.add_parser('project-status',help='inspect a generic processing run');runstatus.add_argument('--output',required=True)
     evaluate=sub.add_parser('project-evaluate-reference',help='conditional frame-indexed position comparison');evaluate.add_argument('--output',required=True,help='completed run directory');evaluate.add_argument('--reference',required=True);evaluate.add_argument('--distance',required=True,type=float,help='proximity gate in scene units');evaluate.add_argument('--assume-aligned',action='store_true',required=True,help='assert reference uses the same frame zero and coordinates');evaluate.add_argument('--report',help='write a new JSON report')
     offsets=sub.add_parser('project-apply-offsets',help='create a validated project using timing offsets');offsets.add_argument('--config',required=True);offsets.add_argument('--offsets',required=True);offsets.add_argument('--output',required=True)
+    preview=sub.add_parser('project-preview-videos',help='create verified browser playback copies');preview_source=preview.add_mutually_exclusive_group(required=True);preview_source.add_argument('--output',help='completed run directory');preview_source.add_argument('--config',help='project config before processing');preview.add_argument('--destination',required=True,help='new preview bundle directory');preview.add_argument('--camera',action='append',help='camera ID; repeat to select, defaults to all')
     args=parser.parse_args(argv)
     if os.geteuid()==0:print('Direct root execution is prohibited; use the WSL non-root user.',file=sys.stderr);return 1
     if args.command=='project-evaluate-reference':
@@ -125,6 +126,12 @@ def main(argv=None):
             print(content)
         except (ValueError,OSError,KeyError,TypeError,ZeroDivisionError) as error:print('Reference evaluation failed: '+str(error),file=sys.stderr);return 1
         return 0
+    if args.command=='project-preview-videos':
+        from walkflows.multicamera_preview import build_preview_bundle, build_project_preview_bundle
+        try:result=(build_preview_bundle(args.output,args.destination,args.camera) if args.output
+                    else build_project_preview_bundle(args.config,args.destination,args.camera))
+        except (ValueError,OSError,KeyError,RuntimeError) as error:print('Preview conversion failed: '+str(error),file=sys.stderr);return 1
+        print(json.dumps(result,ensure_ascii=False,indent=2));return 0
     if args.command=='project-apply-offsets':
         from walkflows.multicamera_project import apply_offsets
         try:result=apply_offsets(args.config,args.offsets,args.output)
@@ -161,7 +168,7 @@ def main(argv=None):
     if args.command=='project-calibration-ui':
         from walkflows.multicamera_project import build_project
         from walkflows.multicamera_review import serve_calibration
-        try:serve_calibration(build_project(args.config,allow_no_overlap=True),args.port)
+        try:serve_calibration(build_project(args.config,allow_no_overlap=True),args.port,preview_dir=args.preview_dir)
         except (ValueError,OSError,KeyError) as error:print('Cannot open calibration: '+str(error),file=sys.stderr);return 1
         return 0
     if args.command=='project-calibrate':
@@ -172,7 +179,7 @@ def main(argv=None):
         print(json.dumps(result,indent=2));return 0
     if args.command=='project-review':
         from walkflows.multicamera_review import serve as serve_project
-        try:serve_project(args.output,args.port)
+        try:serve_project(args.output,args.port,preview_dir=args.preview_dir)
         except (ValueError,OSError,KeyError) as error:print('Cannot review project: '+str(error),file=sys.stderr);return 1
         return 0
     if args.command=='project-run':

@@ -311,17 +311,19 @@ async function init() {
   $("scope").textContent = "本地处理结果 · 仅显示逐镜观察";
   $("seek").min = manifest.timeline.start_seconds; $("seek").max = manifest.timeline.end_seconds;
   for (const camera of manifest.cameras) {
-    const result = await fetch("/observations/" + encodeURIComponent(camera.id));
+    const result = await fetch("/observations/" + encodeURIComponent(camera.id) + "?v=" + encodeURIComponent(camera.observations_revision));
     if (!result.ok) throw Error("无法读取观察数据：" + camera.id);
     const frames = parseCsv(await result.text());
+    sanitizeCalibration(frames, camera.calibrated);
     const card = document.createElement("article"); card.className = "card";
     const head = document.createElement("header"), name = document.createElement("h2"), meta = document.createElement("span");
-    name.textContent = camera.id; meta.className = "meta"; meta.textContent = camera.observations + " 条观察";
+    name.textContent = camera.id; meta.className = "meta"; meta.textContent = camera.observations + " 条观察 · 原始编码 " + (camera.codec_fourcc || "未知");
     head.append(name,meta); const stage = document.createElement("div"); stage.className = "stage";
-    const video = document.createElement("video"); video.preload = "metadata"; video.muted = true; video.playsInline = true; video.src = "/video/" + encodeURIComponent(camera.id);
+    const video = document.createElement("video"); video.preload = "metadata"; video.muted = true; video.playsInline = true; video.src = "/video/" + encodeURIComponent(camera.id) + "?v=" + encodeURIComponent(camera.video_revision);
     const canvas = document.createElement("canvas"); stage.append(video,canvas);
     const note = document.createElement("p"); note.className = "note";
     note.textContent = camera.calibrated ? "已提供平面映射；精度未验证。" : "未提供平面映射；仅显示单镜结果。";
+    note.textContent += camera.video_source === "transcoded_preview" ? " · 使用转码预览副本；叠框基于原视频，逐帧时间戳尚未校验。" : " · 使用原视频。";
     video.addEventListener("error", () => { note.textContent = "视频无法播放：请检查浏览器是否支持该格式和编码。"; });
     video.addEventListener("seeked", () => draw(item)); video.addEventListener("loadedmetadata", () => draw(item));
     card.append(head,stage,note); $("cameras").append(card);

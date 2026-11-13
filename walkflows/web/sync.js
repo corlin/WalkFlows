@@ -48,12 +48,13 @@ fetch("/manifest.json").then(r=>{if(!r.ok)throw Error();return r.json();}).then(
     const card=document.createElement("article");card.className="card";
     const head=document.createElement("header"),name=document.createElement("h2");name.textContent=camera.id;head.append(name);
     const stage=document.createElement("div");stage.className="stage";
-    const video=document.createElement("video");video.preload="metadata";video.muted=true;video.playsInline=true;video.src="/video/"+encodeURIComponent(camera.id);stage.append(video);
+    const video=document.createElement("video");video.preload="metadata";video.muted=true;video.playsInline=true;video.src="/video/"+encodeURIComponent(camera.id)+"?v="+encodeURIComponent(camera.video_revision);stage.append(video);
     const panel=document.createElement("div");panel.className="sync-panel";
     const label=document.createElement("label");label.textContent="首帧偏移（秒）";
     const input=document.createElement("input");input.type="number";input.step="any";input.value=camera.offset_seconds;label.append(input);
     const current=document.createElement("span");current.textContent="本视频 0.00 秒";panel.append(label,current);
     const warning=document.createElement("p");warning.className="note";
+    warning.textContent=camera.video_source==="transcoded_preview"?"使用转码预览副本；逐帧时间戳尚未校验，需结合原视频确认时间对齐。":"";
     video.onerror=()=>{warning.textContent="视频无法播放：请检查格式或编码。";};
     input.oninput=calculate;card.append(head,stage,panel,warning);$("cameras").append(card);
     cards.push({id:camera.id,duration:camera.duration_seconds,input,video,current});

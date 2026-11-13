@@ -8,7 +8,7 @@ class GenericReviewAnalyticsTest(unittest.TestCase):
         path = Path(__file__).resolve().parents[1] / "walkflows/web/analytics.js"
         script = """
         const assert = require('assert');
-        const {candidatePairs, pointInPolygon, zoneTransitions, heatGrid, regionFlows, uniqueFramePoints} = require(process.argv[1]);
+        const {candidatePairs, pointInPolygon, zoneTransitions, heatGrid, regionFlows, uniqueFramePoints, sanitizeCalibration} = require(process.argv[1]);
         const a = [{id:'1', x:0, y:0}];
         const b = [{id:'2', x:0.1, y:0}];
         assert.equal(candidatePairs(a,b,0.2).unique.length,1);
@@ -51,5 +51,12 @@ class GenericReviewAnalyticsTest(unittest.TestCase):
         const duplicateWithInvalid = [{local_id:'1',world_x:'1',world_y:'1'}, {local_id:'1',world_x:'',world_y:''}];
         assert.equal(uniqueFramePoints(duplicateWithInvalid).length,0);
         assert.equal(uniqueFramePoints([{local_id:'1',world_x:'1',world_y:'1'}]).length,1);
+        const contaminated=new Map([[0,[{local_id:'1',world_x:'4',world_y:'5'}]]]);
+        sanitizeCalibration(contaminated,false);
+        assert.equal(contaminated.get(0)[0].world_x,'');
+        assert.equal(contaminated.get(0)[0].world_y,'');
+        const calibrated=new Map([[0,[{local_id:'1',world_x:'4',world_y:'5'}]]]);
+        sanitizeCalibration(calibrated,true);
+        assert.equal(calibrated.get(0)[0].world_x,'4');
         """
         subprocess.run(["node", "-e", script, str(path)], check=True, capture_output=True, text=True)

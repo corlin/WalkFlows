@@ -28,9 +28,10 @@ function choose() {
   current=cameras.find(c=>c.id===$("camera").value);
   if (!current) return;
   if (!byCamera.has(current.id)) byCamera.set(current.id,{image_points:[],plane_points:[]});
+  $("source-warning").textContent=current.video_source==="transcoded_preview"?"当前使用转码预览副本；逐帧时间戳尚未校验。":"当前使用原视频。";
   pending=null;$("image-point").textContent="在画面中选择一个地面点。";$("feedback").textContent="";
   $("video-error").textContent="";$("time").value=0;$("time-label").value="0.00 秒";
-  $("video").src="/video/"+encodeURIComponent(current.id);render();
+  $("video").src="/video/"+encodeURIComponent(current.id)+"?v="+encodeURIComponent(current.video_revision);render();
 }
 $("click-image").addEventListener("click", event => {
   if (!current || !$("video").videoWidth) return;

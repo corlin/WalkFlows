@@ -38,6 +38,7 @@ class MulticameraProjectTest(unittest.TestCase):
         self.assertAlmostEqual(result["timeline"]["end_seconds"], 1.0)
         self.assertEqual(result["cameras"][0]["video"]["frame_count"], 5)
         self.assertEqual(result["cameras"][0]["video"]["width"], 64)
+        self.assertEqual(result["cameras"][0]["video"]["codec_fourcc"], "MJPG")
         self.assertEqual(len(result["cameras"][0]["video"]["sha256"]), 64)
         self.assertIsNone(result["cameras"][0]["homography"])
         self.assertEqual(result["cameras"][1]["homography"][0][2], 2.0)

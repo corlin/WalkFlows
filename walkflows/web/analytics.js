@@ -1,4 +1,10 @@
 "use strict";
+function sanitizeCalibration(frames, calibrated) {
+  if (calibrated === true) return;
+  for (const rows of frames.values()) for (const row of rows) {
+    row.world_x = ""; row.world_y = "";
+  }
+}
 function candidatePairs(left, right, maxDistance) {
   if (!Number.isFinite(maxDistance) || maxDistance <= 0) throw Error("invalid distance");
   const edges=[], leftCount=new Map(), rightCount=new Map();
@@ -106,4 +112,4 @@ function regionFlows(events, samples, maxSeconds) {
   }
   return result.sort((a,b)=>a.arrival_time-b.arrival_time);
 }
-if (typeof module !== "undefined") module.exports={candidatePairs,pointInPolygon,zoneTransitions,heatGrid,regionFlows,uniqueFramePoints};
+if (typeof module !== "undefined") module.exports={candidatePairs,pointInPolygon,zoneTransitions,heatGrid,regionFlows,uniqueFramePoints,sanitizeCalibration};

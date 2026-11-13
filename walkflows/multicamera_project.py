@@ -16,6 +16,11 @@ def _video(path):
         ok, frame = capture.read()
         fps = float(capture.get(cv2.CAP_PROP_FPS))
         count = float(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        raw_fourcc = float(capture.get(cv2.CAP_PROP_FOURCC))
+        fourcc = int(raw_fourcc) if math.isfinite(raw_fourcc) and 0 <= raw_fourcc <= 0xffffffff else 0
+        codec = "".join(chr((fourcc >> (8 * i)) & 255) for i in range(4)).strip("\x00")
+        if not codec or not all(32 <= ord(c) <= 126 for c in codec):
+            codec = None
         if not ok or frame is None or not math.isfinite(fps) or fps <= 0 or not math.isfinite(count) or count < 1:
             raise ValueError(f"unreadable video or invalid metadata: {path}")
         height, width = frame.shape[:2]
@@ -29,7 +34,7 @@ def _video(path):
         for block in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(block)
     return {"path": str(path), "width": width, "height": height, "fps": fps,
-            "frame_count": frames, "duration_seconds": frames / fps, "sha256": digest.hexdigest()}
+            "frame_count": frames, "duration_seconds": frames / fps, "codec_fourcc": codec, "sha256": digest.hexdigest()}
 
 
 def build_project(config_path, *, allow_no_overlap=False):

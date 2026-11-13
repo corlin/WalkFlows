@@ -34,9 +34,15 @@ class RangeHandler(SimpleHTTPRequestHandler):
 
     def end_headers(self):
         self.send_header('Accept-Ranges', 'bytes')
+        self.send_header('Cache-Control', 'no-store, max-age=0')
         super().end_headers()
 
     def send_head(self):
+        # Different local runs can reuse the same URL and have older mtimes.
+        # Never answer a conditional request with a stale cached representation.
+        for name in ("If-Modified-Since", "If-None-Match"):
+            if name in self.headers:
+                del self.headers[name]
         self._byte_count = None
         header = self.headers.get('Range')
         # If-Range or multi-range requests are safely served as full responses.
