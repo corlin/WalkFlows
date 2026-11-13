@@ -38,7 +38,21 @@ status 显示输入与回放包的来源状态，不执行 GPU 健康检查。bu
 
 ## 通用多摄像头流程（开发中）
 
-可用本地文件创建项目、设置偏移与平面映射、执行逐镜处理并查看结果。以下是两路示例；可按相同方式传入 5–6 路：
+推荐从统一入口开始，以下为两路示例，5–6 路时继续添加 `--camera ID=路径`：
+
+~~~bash
+.venv/bin/python -m walkflows project-workflow --name Room \
+  --workspace /home/corlin/WalkFlows/data/processed/my-room \
+  --camera 'front=/path/front.mp4' --camera 'back=/path/back.mp4' --device 0
+~~~
+
+工作目录必须不存在。命令显示每路录像信息并启动配置页面（默认 http://127.0.0.1:8769/sync）；按提示可填写页面下载的偏移 JSON，以及逐路下载的平面对应点 JSON 路径，也可跳过。输入完成后自动处理并启动结果页（默认 http://127.0.0.1:8768/），Ctrl-C 停止服务。终端可填写 WSL 路径或带引号的 Windows 盘符路径。GPU 不可用时使用 `--device cpu`。
+
+已有同场地映射可用 `--mapping-config /path/project.json` 导入，要求相机 ID 和尺寸一致，原配置指向的视频仍须可访问；尺寸相同并不能证明相机位置或坐标系一致。若已有经校验的播放副本，可传 `--preview-dir /path/preview`。自动处理可加 `--non-interactive --no-serve`；处理中断后可依据终端打印的最终配置，用 `project-run --config <最终配置> --output <工作目录>/result --device <原设备> --resume` 恢复，再运行 `project-review --output <工作目录>/result`。
+
+录像偏移和真实平面对应点仍需按现场设置，跳过平面标定只能查看单镜观察；个别视频播放失败时其他可播放画面继续。两组既有场地录像的操作与局限见 [验收记录](desc/91-workflow-acceptance.md)。
+
+也可以使用以下分步命令：
 
 ~~~bash
 .venv/bin/python -m walkflows project-create --name Room \

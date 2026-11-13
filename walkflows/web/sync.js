@@ -32,9 +32,11 @@ function tick(now){
 $("play").onclick=async()=>{
   if(playing){stop();return;}
   let t=Number($("seek").value);if(t>=end-.01)t=start;updateTime(t,true);
-  try{await Promise.all(cards.map(c=>c.video.play()));}
-  catch(e){stop();$("error").textContent="部分视频无法播放，请检查浏览器编码支持。";return;}
-  $("error").textContent="";playing=true;origin=t;anchor=performance.now();$("play").textContent="暂停";requestAnimationFrame(tick);
+  const result=await playAvailable(cards);
+  const names=result.failed.map(c=>c.id).join("、");
+  $("error").textContent=result.failed.length?"无法播放："+names+"；其他可播放视频继续，无法播放的画面不能用于对齐。":"";
+  if(!result.playing.length){stop();return;}
+  playing=true;origin=t;anchor=performance.now();$("play").textContent="暂停";requestAnimationFrame(tick);
 };
 $("seek").oninput=()=>{stop();updateTime(Number($("seek").value),true);};
 $("export").onclick=()=>{

@@ -54,6 +54,22 @@ def _preview_path(root, preview, camera, expected_frames=None):
     return path
 
 
+def _calibration_provenance(camera):
+    info=camera.get("calibration_provenance")
+    if not isinstance(info,dict):return None
+    safe={}
+    for key in ("mapping_config_sha256","points_sha256"):
+        value=info.get(key)
+        if isinstance(value,str) and len(value)==64 and all(ch in "0123456789abcdef" for ch in value):
+            safe[key]=value
+    parent=info.get("source")
+    if isinstance(parent,dict):
+        value=parent.get("points_sha256")
+        if isinstance(value,str) and len(value)==64 and all(ch in "0123456789abcdef" for ch in value):
+            safe["points_sha256"]=value
+    return safe or None
+
+
 def make_handler(directory, preview_dir=None):
     directory = Path(directory).resolve(strict=True)
     run = json.loads((directory / "run.json").read_text(encoding="utf-8"))
@@ -63,7 +79,7 @@ def make_handler(directory, preview_dir=None):
     results = {x["id"]: x for x in run["cameras"]}
     if len(results) != len(sources):
         raise ValueError("incomplete camera results")
-    paths = {"/": WEB / "index.html", "/app.js": WEB / "app.js", "/analytics.js": WEB / "analytics.js", "/style.css": WEB / "style.css"}
+    paths = {"/": WEB / "index.html", "/app.js": WEB / "app.js", "/analytics.js": WEB / "analytics.js", "/playback.js": WEB / "playback.js", "/style.css": WEB / "style.css"}
     preview_root, previews = _load_previews(preview_dir, sources, run_sha=file_sha256(directory / "run.json"))
     revisions = {}
     cameras = []
@@ -113,6 +129,7 @@ def make_handler(directory, preview_dir=None):
         {"id": c["id"], "sha256": c["video"]["sha256"], "offset_seconds": c["offset_seconds"],
          "homography": c.get("homography"), "calibration_polygon": c.get("calibration_polygon"),
          "analysis_roi": c.get("analysis_roi"),
+         "calibration_provenance": _calibration_provenance(c),
          "normalization": ({k:c["normalization"].get(k) for k in ("source_sha256","output_sha256","manifest_sha256","ffmpeg_sha256","requested_fps")} if c.get("normalization") else None),
          "observations_sha256": results[c["id"]]["observations_sha256"]} for c in sources],
         "model": {k: run.get("model", {}).get(k) for k in ("sha256", "tracker", "confidence", "device", "image_size")},
@@ -162,7 +179,7 @@ def serve(directory, port, preview_dir=None):
 def make_calibration_handler(project, preview_dir=None):
     """Expose only project videos and a sanitized calibration interface."""
     paths = {"/": WEB / "calibrate.html", "/calibrate.js": WEB / "calibrate.js",
-             "/sync": WEB / "sync.html", "/sync.js": WEB / "sync.js", "/style.css": WEB / "style.css"}
+             "/sync": WEB / "sync.html", "/sync.js": WEB / "sync.js", "/playback.js": WEB / "playback.js", "/style.css": WEB / "style.css"}
     cameras = []
     revisions = {}
     preview_root, previews = _load_previews(preview_dir, project["cameras"])

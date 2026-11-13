@@ -118,8 +118,34 @@ def main(argv=None):
     timing=sub.add_parser('project-check-timing',help='audit decoded presentation timestamps');timing.add_argument('--video',required=True,help='original video');timing.add_argument('--preview',help='optional playback copy');timing.add_argument('--report',help='write a new JSON report')
     normalize=sub.add_parser('project-normalize-video',help='resample a video into a constant-frame-rate analysis input');normalize.add_argument('--video',required=True);normalize.add_argument('--fps',required=True,type=float,help='explicit target frames per second');normalize.add_argument('--destination',required=True,help='new output directory')
     normproject=sub.add_parser('project-normalize-project',help='resample all project cameras sequentially into a new project');normproject.add_argument('--config',required=True);normproject.add_argument('--fps',required=True,type=float);normproject.add_argument('--destination',required=True,help='new output directory')
+    workflow=sub.add_parser('project-workflow',help='guide a video project from import to review')
+    workflow.add_argument('--name',required=True)
+    workflow.add_argument('--camera',action='append',required=True,metavar='ID=PATH')
+    workflow.add_argument('--workspace',required=True,help='new project workspace directory')
+    workflow.add_argument('--mapping-config',help='existing calibration project with matching camera IDs')
+    workflow.add_argument('--offsets-file',help='existing offset JSON')
+    workflow.add_argument('--preview-dir',help='verified playback-copy bundle for setup and review')
+    workflow.add_argument('--weights',default=str(ROOT/'data/models/yolo11n.pt'))
+    workflow.add_argument('--device',default='cpu')
+    workflow.add_argument('--config-port',type=int,default=8769)
+    workflow.add_argument('--review-port',type=int,default=8768)
+    workflow.add_argument('--non-interactive',action='store_true',help='use supplied mapping and offsets without prompting')
+    workflow.add_argument('--no-serve',action='store_true',help='finish after processing')
     args=parser.parse_args(argv)
     if os.geteuid()==0:print('Direct root execution is prohibited; use the WSL non-root user.',file=sys.stderr);return 1
+    if args.command=='project-workflow':
+        from walkflows.project_workflow import run_workflow
+        try:
+            cameras=[]
+            for spec in args.camera:
+                if '=' not in spec:raise ValueError('camera must use ID=PATH')
+                cid,path=spec.split('=',1);cameras.append({'id':cid,'path':path})
+            run_workflow(args.name,cameras,args.workspace,args.weights,args.device,args.config_port,args.review_port,
+                         mapping_config=args.mapping_config,offsets_file=args.offsets_file,
+                         non_interactive=args.non_interactive,no_serve=args.no_serve,preview_dir=args.preview_dir)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            print('Workflow failed: '+str(error),file=sys.stderr);return 1
+        return 0
     if args.command=='project-normalize-project':
         from walkflows.video_normalize import normalize_project
         try:

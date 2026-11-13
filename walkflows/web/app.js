@@ -20,6 +20,7 @@ function draw(card) {
   if (!width || !height) return;
   canvas.width = width * devicePixelRatio; canvas.height = height * devicePixelRatio;
   ctx.scale(devicePixelRatio, devicePixelRatio);
+  if(card.playbackFailed)return;
   const scale = Math.min(width / camera.width, height / camera.height);
   const ox = (width - camera.width * scale) / 2, oy = (height - camera.height * scale) / 2;
   const frame = Math.floor(video.currentTime * camera.fps + 0.00001);
@@ -334,8 +335,12 @@ async function start() {
   let t = Number($("seek").value);
   if (t >= manifest.timeline.end_seconds - 0.01) t = manifest.timeline.start_seconds;
   setTime(t,true);
-  try { await Promise.all(cards.map(c => c.video.play())); }
-  catch (e) { stop(); $("error").textContent = "部分视频无法播放，请检查浏览器支持的编码或文件状态。"; return; }
+  const result=await playAvailable(cards);
+  for(const card of result.failed){card.playbackFailed=true;draw(card);}
+  for(const card of result.playing)card.playbackFailed=false;
+  const names=result.failed.map(card=>card.camera.id).join("、");
+  $("error").textContent=result.failed.length?"无法播放："+names+"；其他可播放视频继续，无法播放的画面不能用于复核。":"";
+  if(!result.playing.length){stop();return;}
   playing = true; anchorClock = performance.now(); anchorTime = t; $("play").textContent = "暂停";
   requestAnimationFrame(tick);
 }
@@ -360,7 +365,7 @@ async function init() {
     note.textContent += camera.video_source === "transcoded_preview" ? " · 使用转码预览副本；叠框基于原视频，逐帧时间戳尚未校验。" : " · 使用分析输入视频。";
     if(camera.normalized_analysis_input) note.textContent += " · 分析输入经过恒帧率重采样，可能复制或丢弃帧。";
     if(camera.frame_count_matches_metadata===false) note.textContent += " · 解码帧数与元数据不一致；共同时间范围按已解码帧数估算，请检查原视频。";
-    video.addEventListener("error", () => { note.textContent += " · 视频无法播放：请检查浏览器是否支持该格式和编码。"; });
+    video.addEventListener("error", () => { item.playbackFailed=true;draw(item);note.textContent += " · 视频无法播放：请检查浏览器是否支持该格式和编码。"; });
     video.addEventListener("seeked", () => draw(item)); video.addEventListener("loadedmetadata", () => draw(item));
     card.append(head,stage,note); $("cameras").append(card);
     const item = {camera,video,canvas,frames}; cards.push(item);
