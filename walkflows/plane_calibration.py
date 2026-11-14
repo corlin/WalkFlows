@@ -74,6 +74,22 @@ def evaluate_check_points(homography, image_points, plane_points, polygon=None):
         raise ValueError("invalid calibration checks: " + str(exc)) from exc
 
 
+def validate_coordinate_system(value):
+    if value is None:
+        return {"kind":"user_supplied"}
+    if not isinstance(value,dict):
+        raise ValueError("invalid coordinate system")
+    kind=value.get("kind")
+    if kind=="user_supplied":
+        return {"kind":kind}
+    if kind=="reference_image_pixels":
+        import re
+        reference=value.get("reference_camera")
+        if isinstance(reference,str) and re.fullmatch(r"[A-Za-z0-9_-]+",reference):
+            return {"kind":kind,"reference_camera":reference}
+    raise ValueError("invalid coordinate system")
+
+
 def apply_calibration(config_path, camera_id, points_path, output_path):
     """Create a new config; resolve all source paths relative to the old config."""
     config_path = Path(config_path).expanduser().resolve()
@@ -105,6 +121,7 @@ def apply_calibration(config_path, camera_id, points_path, output_path):
     matches[0]["calibration_provenance"] = {
         "points_sha256": hashlib.sha256(points_bytes).hexdigest(),
         "points": result["points"], "rmse": result["rmse"], "max_error": result["max_error"],
+        "coordinate_system":validate_coordinate_system(points.get("coordinate_system")),
         "scope": result["scope"]}
     content = json.dumps(config, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
     with output_path.open("x", encoding="utf-8") as output:
@@ -166,6 +183,12 @@ def apply_calibration_bundle(config_path, bundle_path, output_path):
         raise ValueError("bundle camera IDs must exactly match project cameras")
     config=json.loads(config_path.read_text(encoding="utf-8"))
     fitted={}
+    systems={cid:validate_coordinate_system(entry.get("coordinate_system")) for cid,entry in by_id.items()}
+    if any(v["kind"]=="reference_image_pixels" and v["reference_camera"] not in by_id for v in systems.values()):
+        raise ValueError("reference camera is missing from bundle")
+    kinds={json.dumps(v,sort_keys=True) for v in systems.values()}
+    if len(kinds)>1 and any(v["kind"]=="reference_image_pixels" for v in systems.values()):
+        raise ValueError("camera coordinate systems do not match")
     for camera in cameras:
         entry=by_id[camera["id"]];video=camera["video"]
         if (entry.get("source_sha256") != video["sha256"] or
@@ -184,7 +207,7 @@ def apply_calibration_bundle(config_path, bundle_path, output_path):
         camera["homography"]=fit["homography"]
         camera["calibration_polygon"]=fit["calibration_polygon"]
         camera["calibration_provenance"]={"points_sha256":bundle_hash,"points":fit["points"],
-            "rmse":fit["rmse"],"max_error":fit["max_error"],"scope":fit["scope"]}
+            "rmse":fit["rmse"],"max_error":fit["max_error"],"coordinate_system":systems[camera["id"]],"scope":fit["scope"]}
     content=json.dumps(config,indent=2,ensure_ascii=False,allow_nan=False)+"\n"
     with output_path.open("x",encoding="utf-8") as output:
         output.write(content)

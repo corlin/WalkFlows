@@ -63,6 +63,13 @@ def _calibration_provenance(camera):
         if isinstance(value,str) and len(value)==64 and all(ch in "0123456789abcdef" for ch in value):
             safe[key]=value
     parent=info.get("source")
+    coords=info.get("coordinate_system")
+    if not isinstance(coords,dict) and isinstance(parent,dict):
+        coords=parent.get("coordinate_system")
+    if isinstance(coords,dict) and coords.get("kind")=="reference_image_pixels":
+        ref=coords.get("reference_camera")
+        if isinstance(ref,str) and ref and all(ch.isascii() and (ch.isalnum() or ch in "_-") for ch in ref):
+            safe["coordinate_system"]={"kind":"reference_image_pixels","reference_camera":ref}
     if isinstance(parent,dict):
         value=parent.get("points_sha256")
         if isinstance(value,str) and len(value)==64 and all(ch in "0123456789abcdef" for ch in value):
@@ -81,7 +88,7 @@ def make_handler(directory, preview_dir=None, display_name=None):
         raise ValueError("incomplete camera results")
     paths = {"/": WEB / "index.html", "/app.js": WEB / "app.js", "/analytics.js": WEB / "analytics.js",
              "/sync": WEB / "sync.html", "/sync.js": WEB / "sync.js",
-             "/calibrate": WEB / "calibrate.html", "/calibrate.js": WEB / "calibrate.js",
+             "/calibrate": WEB / "calibrate.html", "/calibrate.js": WEB / "calibrate.js", "/calibrate_match.js": WEB / "calibrate_match.js",
              "/rectangle.js": WEB / "rectangle.js", "/playback.js": WEB / "playback.js", "/style.css": WEB / "style.css"}
     preview_root, previews = _load_previews(preview_dir, sources, run_sha=file_sha256(directory / "run.json"))
     revisions = {}
@@ -145,6 +152,11 @@ def make_handler(directory, preview_dir=None, display_name=None):
                            "provenance": provenance, "cameras": cameras}, ensure_ascii=False).encode("utf-8")
 
     class Handler(RangeHandler):
+        _ground_match_guard=__import__("threading").BoundedSemaphore(1)
+        def do_POST(self):
+            from walkflows.ground_matching import handle_match_request
+            handle_match_request(self,{c["id"]:paths["/video/"+c["id"]] for c in cameras})
+
         def translate_path(self, path):
             return str(paths.get(urlsplit(path).path, WEB / "__not_found__"))
 
@@ -183,7 +195,7 @@ def serve(directory, port, preview_dir=None, display_name=None):
 
 def make_calibration_handler(project, preview_dir=None):
     """Expose only project videos and a sanitized calibration interface."""
-    paths = {"/": WEB / "calibrate.html", "/calibrate": WEB / "calibrate.html", "/calibrate.js": WEB / "calibrate.js", "/rectangle.js": WEB / "rectangle.js",
+    paths = {"/": WEB / "calibrate.html", "/calibrate": WEB / "calibrate.html", "/calibrate.js": WEB / "calibrate.js", "/calibrate_match.js": WEB / "calibrate_match.js", "/rectangle.js": WEB / "rectangle.js",
              "/sync": WEB / "sync.html", "/sync.js": WEB / "sync.js", "/playback.js": WEB / "playback.js", "/style.css": WEB / "style.css"}
     cameras = []
     revisions = {}
@@ -207,6 +219,7 @@ def make_calibration_handler(project, preview_dir=None):
                         "video_source": "transcoded_preview" if preview else "original",
                         "normalized_analysis_input":bool(camera.get("normalization")),
                         "analysis_roi":camera.get("analysis_roi"),
+                        "fps":camera["video"].get("fps"),
                         "width": camera["video"]["width"],
                         "height": camera["video"]["height"],
                         "offset_seconds": camera["offset_seconds"],
@@ -216,6 +229,11 @@ def make_calibration_handler(project, preview_dir=None):
                           ensure_ascii=False).encode("utf-8")
 
     class CalibrationHandler(RangeHandler):
+        _ground_match_guard=__import__("threading").BoundedSemaphore(1)
+        def do_POST(self):
+            from walkflows.ground_matching import handle_match_request
+            handle_match_request(self,{c["id"]:paths["/video/"+c["id"]] for c in cameras})
+
         def translate_path(self, path):
             return str(paths.get(urlsplit(path).path, WEB / "__not_found__"))
 

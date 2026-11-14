@@ -47,7 +47,10 @@ function prepareFloor() {
     return;
   }
   floorBounds = bounds; fullFloorBounds = bounds.slice();
-  $("floor-note").textContent = "散点为当前时间各镜的脚点投影估计；坐标范围根据本次结果自动缩放，不是实际平面图或去重人数。";
+  const relative=(manifest.provenance?.source_videos||[]).some(c=>c.calibration_provenance?.coordinate_system?.kind==="reference_image_pixels");
+  $("floor-note").textContent = relative
+    ? "使用参考相机画面像素作为相对坐标；存在透视变形，不是俯视平面图或米制距离，跨镜结果需独立核验。"
+    : "散点为当前时间各镜的脚点投影估计；坐标范围根据本次结果自动缩放，不是实际平面图或去重人数。";
   cards.forEach((card,i) => {
     const item = document.createElement("span"); item.className = "legend-item";
     item.style.setProperty("--color", colors[i % colors.length]); item.textContent = card.camera.id;

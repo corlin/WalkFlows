@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 let cameras = [], current = null, pending = null, rectangle = null, coverage = null, sourceHashes = new Map();
 const byCamera = new Map(), drafts = new Map(), coverageDrafts = new Map();
-let storageKey = null;
+let storageKey = null, groundSuggestions = null;
 const cornerNames=["原点","沿宽度方向的角","对角","剩余的角"];
 function saveDraft() {
   if (!storageKey) return;
@@ -58,6 +58,13 @@ function paint() {
   if(corners.length>1){
     ctx.beginPath();corners.forEach((p,i)=>{const x=ox+p[0]*scale,y=oy+p[1]*scale;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
     ctx.strokeStyle="#ffbf40";ctx.lineWidth=2;ctx.stroke();
+  }
+  if(groundSuggestions && groundSuggestions.target===current.id){
+    groundSuggestions.matches.forEach((pair,i)=>{
+      const x=ox+pair.target[0]*scale,y=oy+pair.target[1]*scale;
+      ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.fillStyle="#c34276";ctx.fill();
+      ctx.fillStyle="#fff";ctx.font="bold 12px system-ui";ctx.fillText(String(i+1),x+10,y-7);
+    });
   }
   [...data().image_points,...corners,...(pending ? [pending] : [])].forEach((point,i) => {
     const x=ox+point[0]*scale,y=oy+point[1]*scale;
@@ -120,6 +127,7 @@ function updateView() {
 $("view-side").onchange=updateView;
 function choose() {
   if(current) saveDraft();
+  if(typeof clearGroundSuggestions==="function")clearGroundSuggestions();
   current=cameras.find(c=>c.id===$("camera").value);
   if (!current) return;
   if (!byCamera.has(current.id)) byCamera.set(current.id,{image_points:[],plane_points:[]});
@@ -163,6 +171,7 @@ $("click-image").addEventListener("click", event => {
   $("feedback").textContent="";paint();
 });
 $("coverage-start").onclick=()=>{if(!current || rectangle)return;
+  if(typeof clearGroundSuggestions==="function")clearGroundSuggestions();
   coverage=[];pending=null;saveDraft();render();};
 $("coverage-undo").onclick=()=>{if(!coverage)return;coverage.pop();saveDraft();render();};
 $("coverage-cancel").onclick=()=>{coverage=null;saveDraft();render();};
@@ -209,7 +218,7 @@ $("download").onclick=()=>{
   const blob=new Blob([JSON.stringify(data(),null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob), link=document.createElement("a");link.href=url;link.download=current.id+"-points.json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
-$("time").oninput=()=>{const t=Number($("time").value);$("video").currentTime=t;$("time-label").value=t.toFixed(2)+" 秒";};
+$("time").oninput=()=>{if(typeof clearGroundSuggestions==="function")clearGroundSuggestions();const t=Number($("time").value);$("video").currentTime=t;$("time-label").value=t.toFixed(2)+" 秒";};
 $("video").onloadedmetadata=()=>{$("time").max=Number.isFinite($("video").duration)?$("video").duration:0;paint();};
 $("video").onerror=()=>{$("video-error").textContent="视频无法播放：请检查浏览器支持的格式和编码。";};
 window.addEventListener("resize",paint);
@@ -225,4 +234,5 @@ fetch("/manifest.json").then(r=>{if(!r.ok)throw Error();return r.json();}).then(
   if(!cameras.length)throw Error();
   select.disabled=false;$("rectangle-start").disabled=false;$("time").disabled=false;$("add").disabled=false;$("undo").disabled=false;
   select.onchange=choose;choose();
+  if(typeof setupGroundMatching==="function")setupGroundMatching();
 }).catch(()=>{$("video-error").textContent="无法读取项目视频信息。";});

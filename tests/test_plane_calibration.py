@@ -99,6 +99,21 @@ class CalibrationTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"camera"):
                 apply_calibration_bundle(source,bundle,root/"missing.json")
             self.assertFalse((root/"missing.json").exists())
+            entries.append({"id":"b","source_sha256":file_sha256(root/"b.avi"),"width":64,"height":48,
+                "image_points":[[0,0],[60,0],[60,40],[0,40]],"plane_points":[[0,0],[60,0],[60,40],[0,40]],
+                "coordinate_system":{"kind":"reference_image_pixels","reference_camera":"a"}})
+            entries[0]["coordinate_system"]={"kind":"reference_image_pixels","reference_camera":"a"}
+            entries[0]["plane_points"]=entries[0]["image_points"]
+            bundle.write_text(json.dumps({"schema_version":1,"cameras":entries}))
+            relative=root/"relative.json"
+            apply_calibration_bundle(source,bundle,relative)
+            stored=json.loads(relative.read_text())
+            self.assertEqual(stored["cameras"][0]["calibration_provenance"]["coordinate_system"]["kind"],"reference_image_pixels")
+            entries[1].pop("coordinate_system")
+            bundle.write_text(json.dumps({"schema_version":1,"cameras":entries}))
+            with self.assertRaisesRegex(ValueError,"coordinate systems"):
+                apply_calibration_bundle(source,bundle,root/"mixed.json")
+            self.assertFalse((root/"mixed.json").exists())
 
     def test_rejects_invalid_coverage_polygon(self):
         from walkflows.plane_calibration import validate_coverage_polygon
