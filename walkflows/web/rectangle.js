@@ -14,4 +14,21 @@ function rectanglePoints(points, width, height) {
   return {image_points: points.map(p=>p.slice()),
           plane_points: [[0,0],[width,0],[width,height],[0,height]]};
 }
-if (typeof module !== "undefined") module.exports = {rectanglePoints};
+function viewRect(width,height,side) {
+  const split=Math.floor(width/2);
+  if(side==="left")return {x:0,y:0,width:split,height};
+  if(side==="right")return {x:split,y:0,width:width-split,height};
+  return {x:0,y:0,width,height};
+}
+function imageToCanvas(point,view,width,height) {
+  const scale=Math.min(width/view.width,height/view.height);
+  return [(width-view.width*scale)/2+(point[0]-view.x)*scale,
+          (height-view.height*scale)/2+(point[1]-view.y)*scale];
+}
+function canvasToImage(point,view,width,height) {
+  const scale=Math.min(width/view.width,height/view.height);
+  const x=(point[0]-(width-view.width*scale)/2)/scale+view.x;
+  const y=(point[1]-(height-view.height*scale)/2)/scale+view.y;
+  return x>=view.x && x<view.x+view.width && y>=view.y && y<view.y+view.height?[x,y]:null;
+}
+if (typeof module !== "undefined") module.exports = {rectanglePoints,viewRect,imageToCanvas,canvasToImage};

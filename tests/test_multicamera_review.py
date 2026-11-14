@@ -49,7 +49,7 @@ class ReviewTest(unittest.TestCase):
             (root / "a.csv").write_text("frame,timestamp_s,local_id,left,top,right,bottom\n0,0,1,1,2,3,4\n")
             data = {"status": "completed", "scope": "unverified", "project": {
                 "name": "test", "timeline": {"start_seconds": 0, "end_seconds": 1},
-                "cameras": [{"id": "a", "offset_seconds": 0, "homography": None,
+                "cameras": [{"id": "a", "offset_seconds": 0, "homography": None, "analysis_roi":[0,0,32,48],
                              "calibration_provenance":{"mapping_config_sha256":"d"*64},
                              "normalization": {"source_sha256": "a"*64, "output_sha256": file_sha256(video), "manifest_sha256": "b"*64, "ffmpeg_sha256": "c"*64, "requested_fps": 5},
                              "video": {"path": str(video), "sha256": file_sha256(video),
@@ -67,6 +67,7 @@ class ReviewTest(unittest.TestCase):
                 self.assertEqual(manifest["name"], "test")
                 self.assertEqual(manifest["display_name"], "示例店铺")
                 self.assertEqual(manifest["cameras"][0]["duration_seconds"], 1.0)
+                self.assertEqual(manifest["cameras"][0]["analysis_roi"], [0,0,32,48])
                 for route in ("/sync", "/calibrate", "/sync.js", "/calibrate.js", "/rectangle.js"):
                     with urllib.request.urlopen(base + route) as response:
                         self.assertEqual(response.status, 200, route)
