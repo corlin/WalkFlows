@@ -173,3 +173,5 @@ WalkFlows 将多摄像头人员轨迹转换为门店空间触点和客户旅程�
 - [项目现状批判性复核与 MVP 收敛](90-mvp-critical-review.md)
 
 - [统一入口及两组录像操作验收](91-workflow-acceptance.md)
+
+- [共同平面、动态标定与 3D 研究](92-plane-calibration-research.md)
