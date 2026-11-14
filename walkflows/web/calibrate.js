@@ -59,7 +59,7 @@ function paint() {
     ctx.beginPath();corners.forEach((p,i)=>{const x=ox+p[0]*scale,y=oy+p[1]*scale;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
     ctx.strokeStyle="#ffbf40";ctx.lineWidth=2;ctx.stroke();
   }
-  if(groundSuggestions && groundSuggestions.target===current.id){
+  if(groundSuggestions && groundSuggestions.target===current.id && $("match-details").open){
     groundSuggestions.matches.forEach((pair,i)=>{
       const x=ox+pair.target[0]*scale,y=oy+pair.target[1]*scale;
       ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.fillStyle="#c34276";ctx.fill();

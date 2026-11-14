@@ -118,3 +118,5 @@ node scripts/compare_site03_direct_pose_events.js
 常规复现入口为 .venv/bin/python -m walkflows prepare --cross-scene；它检查固定输入，运行或复用经过校验的缓存，并执行 Python 与 JavaScript 检查。验证报告和日志位于 data/processed/site03-verification/ 和 data/processed/local-pipeline/。通过这些检查仅说明当前研究链可复现，不等于完成全项目验收。
 
 已用部分公开数据运行首个弱监督训练试验；部分验证摄像头退化，尚未接入默认流程。固定版本全量数据已下载并完成校验；更广泛的训练和评估仍在推进。仓库尚未添加项目代码的 LICENSE 文件，不应根据非商业化定位推定具体授权条款。
+
+Experimental cross-view matching can optionally use XFeat as a fallback. Download its verified upstream checkpoint with XFeat checkpoint already verified: /home/corlin/WalkFlows/data/models/xfeat.pt in the existing environment. Orange outlines are unverified image-space projections, not a measured floor plan; check for extrapolation, non-floor features and alignment before applying any matches.

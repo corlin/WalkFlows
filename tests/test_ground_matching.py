@@ -2,7 +2,7 @@ import unittest
 import cv2
 import numpy as np
 
-from walkflows.ground_matching import suggest_ground_matches
+from walkflows.ground_matching import suggest_ground_matches, alignment_preview
 
 class GroundMatchingTest(unittest.TestCase):
     def test_matches_common_plane_and_preserves_coordinate_direction(self):
@@ -33,6 +33,21 @@ class GroundMatchingTest(unittest.TestCase):
         for pair in result["matches"]:
             self.assertAlmostEqual(pair["target"][0]-pair["reference"][0],10,delta=2)
             self.assertAlmostEqual(pair["target"][1]-pair["reference"][1],7,delta=2)
+
+    def test_fallback_is_used_only_when_primary_has_no_candidates(self):
+        from unittest.mock import patch
+        blank=np.zeros((64,64),np.uint8)
+        polygon=[[0,0],[63,0],[63,63],[0,63]]
+        with patch("walkflows.ground_matching._suggest_sift",return_value={"status":"insufficient_inliers"}) as primary, \
+             patch("walkflows.ground_matching._suggest_xfeat",return_value={"status":"candidates","algorithm":"xfeat"}) as fallback:
+            result=suggest_ground_matches(blank,blank,polygon,polygon)
+            self.assertEqual(result["algorithm"],"xfeat")
+            self.assertEqual(result["sift_status"],"insufficient_inliers")
+            fallback.assert_called_once()
+        with patch("walkflows.ground_matching._suggest_sift",return_value={"status":"candidates"}) as primary, \
+             patch("walkflows.ground_matching._suggest_xfeat") as fallback:
+            self.assertEqual(suggest_ground_matches(blank,blank,polygon,polygon)["algorithm"],"sift")
+            fallback.assert_not_called()
 
     def test_local_endpoint_returns_candidates_and_rejects_cross_origin(self):
         import json
@@ -71,11 +86,19 @@ class GroundMatchingTest(unittest.TestCase):
                 self.assertEqual(result["status"],"candidates")
                 self.assertEqual(result["plane_mode"],"reference_image")
                 self.assertGreaterEqual(len(result["matches"]),4)
+                self.assertEqual(result["alignment_preview"]["status"],"preview")
                 np.testing.assert_allclose(result["matches"][0]["plane"],result["matches"][0]["reference"],atol=1e-6)
                 request=urllib.request.Request(base+"/ground-match",data=body,headers={"Origin":"http://example.org"})
                 with self.assertRaises(urllib.error.HTTPError) as bad:urllib.request.urlopen(request)
                 self.assertEqual(bad.exception.code,403)
             finally:server.shutdown();server.server_close();thread.join()
+
+    def test_alignment_preview_maps_target_polygon_to_reference(self):
+        pairs=[{"reference":[x,y],"target":[x+12,y+8]} for x,y in [(10,10),(180,10),(180,150),(10,150),(80,70),(130,110),(40,90),(150,60)]]
+        polygon=[[22,18],[192,18],[192,158],[22,158]]
+        result=alignment_preview(pairs,polygon,(200,240))
+        self.assertEqual(result["status"],"preview")
+        np.testing.assert_allclose(result["target_in_reference"],[[10,10],[180,10],[180,150],[10,150]],atol=1e-4)
 
     def test_blank_and_invalid_masks_fail_closed(self):
         blank=np.zeros((200,200),np.uint8)

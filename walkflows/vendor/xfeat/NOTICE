@@ -1,0 +1,1 @@
+XFeat by Potje et al., Apache License 2.0. Source: https://github.com/verlab/accelerated_features at e92685f57f8318b18725c5c8c0bd28c7fe188d9a. Changes: package-relative imports, removed unused tqdm, restricted torch.load to weights-only. Model weights are downloaded separately and checked by SHA-256.

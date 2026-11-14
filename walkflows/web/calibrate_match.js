@@ -11,19 +11,25 @@ function matchReferenceCamera(){return cameras.find(c=>c.id===$("match-reference
 function paintMatchReference(){
   const camera=matchReferenceCamera(),canvas=$("match-reference-canvas");
   if(!camera || !canvas)return;
-  const width=canvas.clientWidth,height=canvas.clientHeight;if(!width||!height)return;
-  canvas.width=width*devicePixelRatio;canvas.height=height*devicePixelRatio;
-  const ctx=canvas.getContext("2d");ctx.scale(devicePixelRatio,devicePixelRatio);
   const roi=camera.analysis_roi;
   const side=roi && roi[0]===0 && roi[1]===0 && roi[2]===Math.floor(camera.width/2) && roi[3]===camera.height?"left":"full";
   const view=viewRect(camera.width,camera.height,side),video=$("match-video"),stage=canvas.parentElement;
   stage.style.aspectRatio=view.width+" / "+view.height;
+  const width=canvas.clientWidth,height=canvas.clientHeight;if(!width||!height)return;
+  canvas.width=width*devicePixelRatio;canvas.height=height*devicePixelRatio;
+  const ctx=canvas.getContext("2d");ctx.scale(devicePixelRatio,devicePixelRatio);
   video.style.width=(100*camera.width/view.width)+"%";video.style.height="100%";
   video.style.left=(-100*view.x/view.width)+"%";video.style.objectFit="fill";
   const points=byCamera.get(camera.id)?.coverage_polygon||[];
   if(points.length>1){ctx.beginPath();points.forEach((p,i)=>{const [x,y]=imageToCanvas(p,view,width,height);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
     ctx.closePath();ctx.strokeStyle="#49aaff";ctx.lineWidth=2;ctx.stroke();}
-  if(groundSuggestions && groundSuggestions.reference===camera.id)
+  if(groundSuggestions && groundSuggestions.reference===camera.id &&
+     groundSuggestions.alignment_preview?.status==="preview") {
+    const outline=groundSuggestions.alignment_preview.target_in_reference;
+    ctx.beginPath();outline.forEach((p,i)=>{const [x,y]=imageToCanvas(p,view,width,height);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+    ctx.closePath();ctx.strokeStyle="#ffb51b";ctx.lineWidth=3;ctx.stroke();
+  }
+  if(groundSuggestions && groundSuggestions.reference===camera.id && $("match-details").open)
     groundSuggestions.matches.forEach((pair,i)=>{const [x,y]=imageToCanvas(pair.reference,view,width,height);
       ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.fillStyle="#c34276";ctx.fill();
       ctx.fillStyle="#fff";ctx.font="bold 12px system-ui";ctx.fillText(String(i+1),x+10,y-7);});
@@ -43,6 +49,7 @@ function setupGroundMatching(){
   $("match-reference-time").oninput=()=>{clearGroundSuggestions();const t=Number($("match-reference-time").value);
     if(Number.isFinite(t)&&t>=0&&Number.isFinite($("match-video").duration))$("match-video").currentTime=Math.min(t,Math.max(0,$("match-video").duration-.001));paint();};
   window.addEventListener("resize",paintMatchReference);
+  $("match-details").ontoggle=()=>{paint();paintMatchReference();};
   changeMatchReference();
 }
 function matchingInputs(){
@@ -75,11 +82,15 @@ $("match-find").onclick=async()=>{
     if(JSON.stringify(matchingInputs())!==snapshot)throw Error("相机、时间或标注已变化，请重新寻找。");
     if(result.status!=="candidates" || result.matches.length<4){
       const counts="区域内特征 "+result.reference_features+" / "+result.target_features+"，初始匹配 "+(result.tentative_matches||0)+"，几何内点 "+(result.inliers||0)+"。";
-      $("match-status").textContent="暂未产生足够候选（"+result.status+"）。"+counts+" 两个画面有重叠也可能因纹理、遮挡、视角变化或算法限制而失败；可调整区域或画面时间后重试。";return;
+      const fallback=result.fallback_status==="model_not_installed"?"增强匹配模型尚未安装。":"";
+      $("match-status").textContent="暂未产生足够候选（"+result.status+"）。"+counts+fallback+" 两个画面有重叠也可能因纹理、遮挡、视角变化或算法限制而失败；可调整区域或画面时间后重试。";return;
     }
     groundSuggestions=result;matchSnapshot=snapshot;
     const mode=result.plane_mode==="reference_image"?"参考画面像素相对坐标，非米制":"参考相机已有坐标";
-    $("match-status").textContent="找到 "+result.matches.length+" 对候选（"+mode+"）。请核对同编号点；只选择同一个固定地面点。";
+    const preview=result.alignment_preview?.status==="preview"?"橙线为区域对齐预览；":"无法生成稳定的区域预览；";
+    const alignment=result.alignment_preview;
+    const extrapolation=alignment?.outside_control_hull_vertices ? " "+alignment.outside_control_hull_vertices+"/"+alignment.polygon_vertices+" \u4e2a\u8fb9\u754c\u70b9\u8d85\u51fa\u5339\u914d\u8303\u56f4\uff0c\u5916\u63a8\u53ef\u80fd\u5931\u771f\u3002" : "";
+    $("match-status").textContent=preview+extrapolation+"找到 "+result.matches.length+" 对候选（"+mode+"，"+(result.algorithm||"sift")+"）。预览未验证，应用前请展开并核对匹配点。";
     const list=$("match-list");list.replaceChildren();
     result.matches.forEach((pair,i)=>{const label=document.createElement("label"),input=document.createElement("input");
       input.type="checkbox";input.value=String(i);input.onchange=()=>{$("match-apply").disabled=list.querySelectorAll("input:checked").length<4;};
