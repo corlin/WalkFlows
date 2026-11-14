@@ -8,7 +8,7 @@ from pathlib import Path
 from walkflows.multicamera_processing import file_sha256, run_project
 from walkflows.multicamera_project import apply_offsets, build_project, create_config
 from walkflows.multicamera_review import make_calibration_handler, serve as serve_review
-from walkflows.plane_calibration import apply_calibration
+from walkflows.plane_calibration import apply_calibration, apply_calibration_bundle
 
 
 def local_path(path):
@@ -73,8 +73,16 @@ def configure_interactively(config,workspace,port,*,preview_dir=None):
                 print("偏移文件无效："+str(error)+"；请重试或回车跳过。",flush=True)
                 continue
             config=target;break
-        points=input("是否逐相机导入地面点文件？输入 y 开始，回车跳过：").strip().lower()
-        if points=="y":
+        points=input("整组标定 JSON 路径（或输入 y 逐相机导入，回车跳过）：").strip()
+        while points and points.lower()!="y":
+            target=workspace/"mapped-bundle.json"
+            try:apply_calibration_bundle(config,local_path(points),target)
+            except (ValueError,OSError,KeyError,TypeError) as error:
+                print("整组标定文件无效："+str(error)+"；请重试、输入 y 逐相机导入或回车跳过。",flush=True)
+                points=input("整组标定 JSON 路径（或输入 y，回车跳过）：").strip()
+                continue
+            config=target;break
+        if points.lower()=="y":
             for camera in project["cameras"]:
                 while True:
                     path=input(camera["id"]+" 的点文件路径（回车跳过）：").strip()

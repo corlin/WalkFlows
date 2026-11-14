@@ -42,3 +42,7 @@ button:disabled{cursor:not-allowed}
 .page-nav [hidden], [hidden]{display:none!important}.section-nav{margin-top:8px}.section-nav a{background:transparent;color:#536b77;font-weight:500}.section-nav a:hover{background:#e7eef2;color:#174f44}
 
 .rectangle-guide .rectangle-status{padding:10px;border-radius:8px;background:#e0f2ea;color:#164c3e;font-weight:700}.manual-guide{border-top:1px solid #dce5ee;padding-top:14px;margin-top:20px}.manual-guide summary{font-weight:700;color:#174f44}.cal-panel ol li{margin:10px 0;line-height:1.5}.cal-panel ol li button{margin:0 0 0 8px;background:#e9f0ed;color:#174f44;font-size:12px;padding:5px 9px}
+
+.coverage-guide{border:1px solid #cfdfeb;background:#f5f9fc;border-radius:10px;padding:14px;margin-bottom:18px}.coverage-guide h2{margin:0;font-size:16px}.coverage-guide p,.camera-progress{font-size:13px;line-height:1.55}.camera-progress{max-height:130px;overflow:auto;margin:8px 0;padding-left:20px}
+
+@media(min-width:801px){.calibration-layout>div:first-child{position:sticky;top:12px;align-self:start}}

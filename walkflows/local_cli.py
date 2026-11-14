@@ -110,6 +110,7 @@ def main(argv=None):
     checkcal=sub.add_parser('project-check-calibration',help='evaluate separately supplied check points against a camera mapping');checkcal.add_argument('--config',required=True);checkcal.add_argument('--camera',required=True);checkcal.add_argument('--points',required=True,help='JSON with independent image_points and plane_points')
     calui=sub.add_parser('project-calibration-ui',help='select calibration points from project videos');calui.add_argument('--config',required=True);calui.add_argument('--port',type=int,default=8769);calui.add_argument('--preview-dir',help='verified playback-copy bundle')
     applycal=sub.add_parser('project-apply-calibration',help='create a new project config with a fitted mapping');applycal.add_argument('--config',required=True);applycal.add_argument('--camera',required=True);applycal.add_argument('--points',required=True);applycal.add_argument('--output',required=True)
+    batchcal=sub.add_parser('project-apply-calibration-bundle',help='apply complete multi-camera points');batchcal.add_argument('--config',required=True);batchcal.add_argument('--bundle',required=True);batchcal.add_argument('--output',required=True)
     create=sub.add_parser('project-create',help='create a validated video project');create.add_argument('--name',required=True);create.add_argument('--camera',action='append',default=[],metavar='ID=PATH');create.add_argument('--normalized-camera',action='append',default=[],metavar='ID=DIR',help='completed normalization bundle');create.add_argument('--offset',action='append',default=[],metavar='ID=SECONDS');create.add_argument('--output',required=True)
     runstatus=sub.add_parser('project-status',help='inspect a generic processing run');runstatus.add_argument('--output',required=True)
     evaluate=sub.add_parser('project-evaluate-reference',help='conditional frame-indexed position comparison');evaluate.add_argument('--output',required=True,help='completed run directory');evaluate.add_argument('--reference',required=True);evaluate.add_argument('--distance',required=True,type=float,help='proximity gate in scene units');evaluate.add_argument('--assume-aligned',action='store_true',required=True,help='assert reference uses the same frame zero and coordinates');evaluate.add_argument('--report',help='write a new JSON report')
@@ -243,6 +244,11 @@ def main(argv=None):
             result['same_file_as_fit']=result['check_points_sha256']==source if source else None
         except (ValueError,OSError,KeyError,TypeError) as error:print('Cannot check calibration: '+str(error),file=sys.stderr);return 1
         print(json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False));return 0
+    if args.command=='project-apply-calibration-bundle':
+        from walkflows.plane_calibration import apply_calibration_bundle
+        try:result=apply_calibration_bundle(args.config,args.bundle,args.output)
+        except (ValueError,OSError,KeyError,TypeError) as error:print('Cannot apply calibration bundle: '+str(error),file=sys.stderr);return 1
+        print(json.dumps({'output':str(Path(args.output).resolve()),**result},ensure_ascii=False,indent=2));return 0
     if args.command=='project-apply-calibration':
         from walkflows.plane_calibration import apply_calibration
         try:result=apply_calibration(args.config,args.camera,args.points,args.output)

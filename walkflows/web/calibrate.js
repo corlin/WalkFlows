@@ -1,15 +1,15 @@
 "use strict";
 const $ = id => document.getElementById(id);
-let cameras = [], current = null, pending = null, rectangle = null;
-const byCamera = new Map(), drafts = new Map();
+let cameras = [], current = null, pending = null, rectangle = null, coverage = null, sourceHashes = new Map();
+const byCamera = new Map(), drafts = new Map(), coverageDrafts = new Map();
 let storageKey = null;
 const cornerNames=["原点","沿宽度方向的角","对角","剩余的角"];
 function saveDraft() {
   if (!storageKey) return;
-  if (current) drafts.set(current.id,rectangle);
+  if (current) {drafts.set(current.id,rectangle);coverageDrafts.set(current.id,coverage);}
   try {
     sessionStorage.setItem(storageKey,JSON.stringify({
-      cameras:Array.from(byCamera.entries()),drafts:Array.from(drafts.entries())
+      cameras:Array.from(byCamera.entries()),drafts:Array.from(drafts.entries()),coverageDrafts:Array.from(coverageDrafts.entries())
     }));
   } catch (_) { $("storage-status").textContent="浏览器无法保存草稿，请及时下载对应点。"; }
 }
@@ -31,7 +31,10 @@ function restoreDraft(project) {
       if(ids.has(id)&&draft&&Array.isArray(draft.points)&&draft.points.length<4&&draft.points.every(validPoint)&&
          Number.isFinite(draft.width)&&draft.width>0&&Number.isFinite(draft.height)&&draft.height>0) drafts.set(id,draft);
     }
-    if(byCamera.size||drafts.size) $("storage-status").textContent="已恢复本标签页的草稿；请检查后下载文件。";
+    for(const [id,points] of saved.coverageDrafts||[]) {
+      if(ids.has(id)&&Array.isArray(points)&&points.every(validPoint)) coverageDrafts.set(id,points);
+    }
+    if(byCamera.size||drafts.size||coverageDrafts.size) $("storage-status").textContent="已恢复本标签页的草稿；请检查后下载文件。";
   } catch (_) { $("storage-status").textContent="草稿无法恢复，请重新选点。"; }
 }
 function updateRectangleStatus() {
@@ -46,6 +49,10 @@ function paint() {
   if (!w || !h) return;
   canvas.width=w*devicePixelRatio; canvas.height=h*devicePixelRatio; ctx.scale(devicePixelRatio,devicePixelRatio);
   const scale=Math.min(w/current.width,h/current.height), ox=(w-current.width*scale)/2, oy=(h-current.height*scale)/2;
+  const outline=coverage || data().coverage_polygon || [];
+  if(outline.length>1){ctx.beginPath();outline.forEach((p,i)=>{const x=ox+p[0]*scale,y=oy+p[1]*scale;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+    if(!coverage)ctx.closePath();ctx.strokeStyle="#49aaff";ctx.lineWidth=2;ctx.stroke();
+    outline.forEach(p=>{ctx.beginPath();ctx.arc(ox+p[0]*scale,oy+p[1]*scale,4,0,Math.PI*2);ctx.fillStyle="#49aaff";ctx.fill();});}
   const corners=rectangle ? rectangle.points : [];
   if(corners.length>1){
     ctx.beginPath();corners.forEach((p,i)=>{const x=ox+p[0]*scale,y=oy+p[1]*scale;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
@@ -68,7 +75,25 @@ function render() {
     remove.onclick=()=>{data().image_points.splice(i,1);data().plane_points.splice(i,1);saveDraft();render();};
     li.append(text,remove);list.append(li);
   });
-  $("download").disabled=data().image_points.length<4;paint();
+  $("download").disabled=data().image_points.length<4 || Boolean(coverage) || Boolean(rectangle);
+  const counts=cameras.map(c=>({camera:c,points:byCamera.get(c.id)}));
+  const complete=counts.filter(x=>x.points && x.points.image_points.length>=4);
+  $("all-status").textContent="已完成 "+complete.length+" / "+cameras.length+" 路对应点；共同坐标系和实际有效地面仍需核验。";
+  const listAll=$("all-cameras");listAll.replaceChildren();
+  counts.forEach(({camera,points})=>{const li=document.createElement("li");
+    li.textContent=camera.id+"："+(points ? points.image_points.length:0)+" 个对应点 · "+(points&&points.coverage_polygon?"已画区域":"未画区域");listAll.append(li);});
+  const unfinished=Boolean(coverage)||Boolean(rectangle)||Array.from(drafts.values()).some(Boolean)||Array.from(coverageDrafts.values()).some(Boolean);
+  const sourceMissing=counts.some(x=>!sourceHashes.get(x.camera.id));
+  $("download-all").disabled=complete.length!==cameras.length || sourceMissing || unfinished;
+  if(sourceMissing) $("all-status").textContent+=" 缺少原视频来源信息，不能整组导出。";
+  else if(unfinished) $("all-status").textContent+=" 请先完成或取消正在绘制的区域。";
+  $("coverage-start").disabled=data().image_points.length<4 || Boolean(rectangle) || Boolean(coverage);
+  $("coverage-undo").disabled=!coverage || !coverage.length;
+  $("coverage-finish").disabled=!coverage || coverage.length<3;
+  $("coverage-cancel").disabled=!coverage;
+  if(coverage) $("coverage-status").textContent="正在绘制：已选 "+coverage.length+" 个顶点，按地面边界顺序继续。";
+  else $("coverage-status").textContent=data().coverage_polygon?"已绘制 "+data().coverage_polygon.length+" 个顶点；请核验地面范围。":"尚未绘制；将使用对应点凸包近似。";
+  paint();
 }
 function choose() {
   if(current) saveDraft();
@@ -77,7 +102,7 @@ function choose() {
   if (!byCamera.has(current.id)) byCamera.set(current.id,{image_points:[],plane_points:[]});
   $("source-warning").textContent=current.video_source==="transcoded_preview"?"当前使用转码预览副本；逐帧时间戳尚未校验。":"当前使用原视频。";
   if(current.normalized_analysis_input) $("source-warning").textContent+=" 分析输入经过恒帧率重采样，需重新核对时间。";
-  rectangle=drafts.get(current.id)||null;
+  rectangle=drafts.get(current.id)||null;coverage=coverageDrafts.get(current.id)||null;
   $("rectangle-status").textContent="请先确认地面矩形和实际尺寸。";
   if(rectangle){$("rectangle-width").value=rectangle.width;$("rectangle-height").value=rectangle.height;}
   updateRectangleStatus();pending=null;$("image-point").textContent="在画面中选择一个地面点。";$("feedback").textContent="";
@@ -91,6 +116,7 @@ $("click-image").addEventListener("click", event => {
   const x=(event.clientX-rect.left-(rect.width-current.width*scale)/2)/scale;
   const y=(event.clientY-rect.top-(rect.height-current.height*scale)/2)/scale;
   if (x<0 || y<0 || x>=current.width || y>=current.height) { $("feedback").textContent="请选择视频画面内的点。";return; }
+  if(coverage){coverage.push([x,y]);saveDraft();render();return;}
   if (rectangle) {
     rectangle.points.push([x,y]);
     if (rectangle.points.length === 4) {
@@ -109,8 +135,22 @@ $("click-image").addEventListener("click", event => {
   pending=[x,y];$("image-point").textContent="已选图像点："+x.toFixed(1)+", "+y.toFixed(1);
   $("feedback").textContent="";paint();
 });
+$("coverage-start").onclick=()=>{if(!current || data().image_points.length<4 || rectangle)return;
+  coverage=[];pending=null;saveDraft();render();};
+$("coverage-undo").onclick=()=>{if(!coverage)return;coverage.pop();saveDraft();render();};
+$("coverage-cancel").onclick=()=>{coverage=null;saveDraft();render();};
+$("coverage-finish").onclick=()=>{if(!coverage || coverage.length<3)return;
+  data().coverage_polygon=coverage.map(p=>p.slice());coverage=null;saveDraft();render();
+  $("coverage-status").textContent="区域已保存；应用时将检查是否交叉及是否在对应点范围内。";};
+$("download-all").onclick=()=>{
+  const entries=cameras.map(c=>({id:c.id,source_sha256:sourceHashes.get(c.id),width:c.width,height:c.height,...byCamera.get(c.id)}));
+  const payload={schema_version:1,cameras:entries};
+  const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));
+  const link=document.createElement("a");link.href=url;link.download="walkflows-all-camera-calibration.json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
 $("rectangle-start").onclick=()=>{
   if (!current) return;
+  if (coverage) {$("rectangle-status").textContent="请先完成或取消区域绘制。";return;}
   if (rectangle && rectangle.points.length) {
     $("rectangle-status").textContent="当前正在选点，可撤销上一个角或取消后重新开始。";return;
   }
@@ -123,11 +163,11 @@ $("rectangle-start").onclick=()=>{
     $("rectangle-status").textContent="请输入正的实际宽度和高度。";return;
   }
   pending=null;rectangle={width:w,height:h,points:[]};updateRectangleStatus();saveDraft();
-  paint();
+  render();
 };
 $("rectangle-undo").onclick=()=>{if(!rectangle)return;rectangle.points.pop();updateRectangleStatus();saveDraft();paint();};
 $("rectangle-cancel").onclick=()=>{rectangle=null;updateRectangleStatus();saveDraft();
-  $("rectangle-status").textContent="已取消选点。";paint();};
+  $("rectangle-status").textContent="已取消选点。";render();};
 $("add").onclick=()=>{
   const x=$("world-x").value,y=$("world-y").value;
   if (!pending || x.trim()==="" || y.trim()==="" || !Number.isFinite(Number(x)) || !Number.isFinite(Number(y))) {
@@ -148,7 +188,10 @@ $("video").onerror=()=>{$("video-error").textContent="视频无法播放：请�
 window.addEventListener("resize",paint);
 fetch("/manifest.json").then(r=>{if(!r.ok)throw Error();return r.json();}).then(project=>{
   if(project.review_available){$("review-link").hidden=false;$("review-warning").hidden=false;}
-  cameras=project.cameras;restoreDraft(project);const select=$("camera");
+  cameras=project.cameras;
+  const sources=new Map((project.provenance?.source_videos||[]).map(c=>[c.id,c.sha256]));
+  sourceHashes=new Map(cameras.map(c=>[c.id,sources.get(c.id)||(c.video_source==="original"?c.video_revision:null)]));
+  restoreDraft(project);const select=$("camera");
   for(const c of cameras){const option=document.createElement("option");option.value=c.id;option.textContent=c.id;select.append(option);}
   if(!cameras.length)throw Error();
   select.disabled=false;$("rectangle-start").disabled=false;$("time").disabled=false;$("add").disabled=false;$("undo").disabled=false;
