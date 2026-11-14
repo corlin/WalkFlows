@@ -48,3 +48,5 @@ button:disabled{cursor:not-allowed}
 @media(min-width:801px){.calibration-layout>div:first-child{position:sticky;top:12px;align-self:start}}
 
 .cal-stage{overflow:hidden}.controls #view-side{flex:0 1 auto;min-width:0}
+
+.coverage-guide button{padding:9px 12px;margin:8px 6px 0 0;background:#174f44;color:#fff;border:0;border-radius:7px;cursor:pointer}.coverage-guide button:disabled{opacity:.45;cursor:not-allowed}.calibration-layout>div:first-child>.coverage-guide{margin-top:12px}

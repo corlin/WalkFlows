@@ -90,12 +90,12 @@ function render() {
   $("download-all").disabled=complete.length!==cameras.length || sourceMissing || unfinished;
   if(sourceMissing) $("all-status").textContent+=" 缺少原视频来源信息，不能整组导出。";
   else if(unfinished) $("all-status").textContent+=" 请先完成或取消正在绘制的区域。";
-  $("coverage-start").disabled=data().image_points.length<4 || Boolean(rectangle) || Boolean(coverage);
+  $("coverage-start").disabled=Boolean(rectangle) || Boolean(coverage);
   $("coverage-undo").disabled=!coverage || !coverage.length;
   $("coverage-finish").disabled=!coverage || coverage.length<3;
   $("coverage-cancel").disabled=!coverage;
   if(coverage) $("coverage-status").textContent="正在绘制：已选 "+coverage.length+" 个顶点，按地面边界顺序继续。";
-  else $("coverage-status").textContent=data().coverage_polygon?"已绘制 "+data().coverage_polygon.length+" 个顶点；请核验地面范围。":"尚未绘制；将使用对应点凸包近似。";
+  else $("coverage-status").textContent=data().coverage_polygon?"已绘制 "+data().coverage_polygon.length+" 个顶点；请核验地面范围。":"尚未绘制地面区域。";
   updateView();
 }
 function updateView() {
@@ -148,6 +148,7 @@ $("click-image").addEventListener("click", event => {
     if (rectangle.points.length === 4) {
       try {
         const result=rectanglePoints(rectangle.points, rectangle.width, rectangle.height);
+        if(data().coverage_polygon) result.coverage_polygon=data().coverage_polygon;
         byCamera.set(current.id,result);rectangle=null;updateRectangleStatus();saveDraft();
         $("rectangle-status").textContent="已生成四组对应点。请检查角点和尺寸，再下载；建议另选独立检查点。";
         render();return;
@@ -161,13 +162,13 @@ $("click-image").addEventListener("click", event => {
   pending=[x,y];$("image-point").textContent="已选图像点："+x.toFixed(1)+", "+y.toFixed(1);
   $("feedback").textContent="";paint();
 });
-$("coverage-start").onclick=()=>{if(!current || data().image_points.length<4 || rectangle)return;
+$("coverage-start").onclick=()=>{if(!current || rectangle)return;
   coverage=[];pending=null;saveDraft();render();};
 $("coverage-undo").onclick=()=>{if(!coverage)return;coverage.pop();saveDraft();render();};
 $("coverage-cancel").onclick=()=>{coverage=null;saveDraft();render();};
 $("coverage-finish").onclick=()=>{if(!coverage || coverage.length<3)return;
   data().coverage_polygon=coverage.map(p=>p.slice());coverage=null;saveDraft();render();
-  $("coverage-status").textContent="区域已保存；应用时将检查是否交叉及是否在对应点范围内。";};
+  $("coverage-status").textContent="区域草稿已保存；要映射到共同平面还需设置对应点。";};
 $("download-all").onclick=()=>{
   const entries=cameras.map(c=>({id:c.id,source_sha256:sourceHashes.get(c.id),width:c.width,height:c.height,...byCamera.get(c.id)}));
   const payload={schema_version:1,cameras:entries};
