@@ -178,7 +178,7 @@ def serve(directory, port, preview_dir=None):
 
 def make_calibration_handler(project, preview_dir=None):
     """Expose only project videos and a sanitized calibration interface."""
-    paths = {"/": WEB / "calibrate.html", "/calibrate.js": WEB / "calibrate.js",
+    paths = {"/": WEB / "calibrate.html", "/calibrate.js": WEB / "calibrate.js", "/rectangle.js": WEB / "rectangle.js",
              "/sync": WEB / "sync.html", "/sync.js": WEB / "sync.js", "/playback.js": WEB / "playback.js", "/style.css": WEB / "style.css"}
     cameras = []
     revisions = {}

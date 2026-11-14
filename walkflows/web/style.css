@@ -36,3 +36,5 @@ button:disabled{cursor:not-allowed}
 .setup-page .section-heading{margin-top:24px}
 @media(max-width:1000px){.review-layout{grid-template-columns:1fr}.review-page .floor{margin-top:0}}
 @media(max-width:600px){main{padding:16px}.page-header{align-items:flex-start}.page-header h1{font-size:23px}.section-heading{display:block}.section-heading p{margin-top:5px}.controls{gap:10px}.timeline input[type=range]{order:3;flex-basis:100%}.floor canvas{height:260px}}
+
+.rectangle-guide{border:1px solid #cddfd7;border-radius:10px;padding:14px;margin-bottom:22px;background:#f4faf7}.rectangle-guide summary{font-weight:700;color:#174f44}.rectangle-guide p{font-size:13px;line-height:1.5}.rectangle-guide .cal-inputs{margin-top:10px}
