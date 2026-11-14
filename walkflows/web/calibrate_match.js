@@ -87,7 +87,7 @@ $("match-find").onclick=async()=>{
     }
     groundSuggestions=result;matchSnapshot=snapshot;
     const mode=result.plane_mode==="reference_image"?"参考画面像素相对坐标，非米制":"参考相机已有坐标";
-    const preview=result.alignment_preview?.status==="preview"?"橙线为区域对齐预览；":"无法生成稳定的区域预览；";
+    const preview=result.alignment_preview?.status==="preview"?"橙线为区域对齐预览；":(result.alignment_preview?.status==="excessive_extrapolation"?"\u5339\u914d\u70b9\u8986\u76d6\u4e0d\u8db3\uff0c\u5df2\u9690\u85cf\u5b8c\u6574\u533a\u57df\u8f6e\u5ed3\uff1b":"无法生成稳定的区域预览；");
     const alignment=result.alignment_preview;
     const extrapolation=alignment?.outside_control_hull_vertices ? " "+alignment.outside_control_hull_vertices+"/"+alignment.polygon_vertices+" \u4e2a\u8fb9\u754c\u70b9\u8d85\u51fa\u5339\u914d\u8303\u56f4\uff0c\u5916\u63a8\u53ef\u80fd\u5931\u771f\u3002" : "";
     $("match-status").textContent=preview+extrapolation+"找到 "+result.matches.length+" 对候选（"+mode+"，"+(result.algorithm||"sift")+"）。预览未验证，应用前请展开并核对匹配点。";

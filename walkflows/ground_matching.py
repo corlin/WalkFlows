@@ -214,6 +214,9 @@ def alignment_preview(matches, target_polygon, reference_shape):
             return {"status":"unavailable"}
         hull=cv2.convexHull(source[inliers.ravel().astype(bool)].astype(np.float32))
         outside=sum(cv2.pointPolygonTest(hull,tuple(map(float,p)),False)<0 for p in polygon)
+        if outside > len(polygon)/2:
+            return {"status":"excessive_extrapolation","inliers":int(inliers.sum()),
+                    "outside_control_hull_vertices":int(outside),"polygon_vertices":len(polygon)}
         return {"status":"preview","target_in_reference":projected.tolist(),"inliers":int(inliers.sum()),
                 "outside_control_hull_vertices":int(outside),"polygon_vertices":len(polygon),
                 "scope":"Unverified projection of target coverage onto reference image; not a metric floor plan."}

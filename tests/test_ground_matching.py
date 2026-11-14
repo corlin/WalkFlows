@@ -86,7 +86,7 @@ class GroundMatchingTest(unittest.TestCase):
                 self.assertEqual(result["status"],"candidates")
                 self.assertEqual(result["plane_mode"],"reference_image")
                 self.assertGreaterEqual(len(result["matches"]),4)
-                self.assertEqual(result["alignment_preview"]["status"],"preview")
+                self.assertIn(result["alignment_preview"]["status"],("preview","excessive_extrapolation"))
                 np.testing.assert_allclose(result["matches"][0]["plane"],result["matches"][0]["reference"],atol=1e-6)
                 request=urllib.request.Request(base+"/ground-match",data=body,headers={"Origin":"http://example.org"})
                 with self.assertRaises(urllib.error.HTTPError) as bad:urllib.request.urlopen(request)
@@ -99,6 +99,15 @@ class GroundMatchingTest(unittest.TestCase):
         result=alignment_preview(pairs,polygon,(200,240))
         self.assertEqual(result["status"],"preview")
         np.testing.assert_allclose(result["target_in_reference"],[[10,10],[180,10],[180,150],[10,150]],atol=1e-4)
+
+    def test_alignment_preview_rejects_mostly_extrapolated_polygon(self):
+        pairs=[{"reference":[x,y],"target":[x+12,y+8]} for x,y in
+               [(80,70),(120,70),(120,110),(80,110),(100,90),(110,80),(90,100),(105,95)]]
+        polygon=[[22,18],[192,18],[192,158],[22,158]]
+        result=alignment_preview(pairs,polygon,(200,240))
+        self.assertEqual(result["status"],"excessive_extrapolation")
+        self.assertEqual(result["outside_control_hull_vertices"],4)
+        self.assertNotIn("target_in_reference",result)
 
     def test_blank_and_invalid_masks_fail_closed(self):
         blank=np.zeros((200,200),np.uint8)
