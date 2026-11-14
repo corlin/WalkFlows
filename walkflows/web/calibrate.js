@@ -94,6 +94,7 @@ $("video").onloadedmetadata=()=>{$("time").max=Number.isFinite($("video").durati
 $("video").onerror=()=>{$("video-error").textContent="视频无法播放：请检查浏览器支持的格式和编码。";};
 window.addEventListener("resize",paint);
 fetch("/manifest.json").then(r=>{if(!r.ok)throw Error();return r.json();}).then(project=>{
+  if(project.review_available){$("review-link").hidden=false;$("review-warning").hidden=false;}
   cameras=project.cameras;const select=$("camera");
   for(const c of cameras){const option=document.createElement("option");option.value=c.id;option.textContent=c.id;select.append(option);}
   if(!cameras.length)throw Error();

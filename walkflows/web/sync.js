@@ -45,6 +45,7 @@ $("export").onclick=()=>{
   const link=document.createElement("a");link.href=url;link.download="walkflows-offsets.json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 fetch("/manifest.json").then(r=>{if(!r.ok)throw Error();return r.json();}).then(project=>{
+  if(project.review_available){$("review-link").hidden=false;$("review-warning").hidden=false;}
   $("title").textContent=project.name+" · 时间对齐";
   for(const camera of project.cameras){
     const card=document.createElement("article");card.className="card";

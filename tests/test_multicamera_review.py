@@ -63,6 +63,11 @@ class ReviewTest(unittest.TestCase):
             base = "http://127.0.0.1:" + str(server.server_port)
             try:
                 manifest = json.load(urllib.request.urlopen(base + "/manifest.json"))
+                self.assertTrue(manifest["review_available"])
+                self.assertEqual(manifest["cameras"][0]["duration_seconds"], 1.0)
+                for route in ("/sync", "/calibrate", "/sync.js", "/calibrate.js", "/rectangle.js"):
+                    with urllib.request.urlopen(base + route) as response:
+                        self.assertEqual(response.status, 200, route)
                 self.assertNotIn(str(root), json.dumps(manifest))
                 self.assertEqual(manifest["provenance"]["source_videos"][0]["normalization"]["source_sha256"],"a"*64)
                 self.assertTrue(manifest["cameras"][0]["normalized_analysis_input"])

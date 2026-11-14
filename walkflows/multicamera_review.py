@@ -79,7 +79,10 @@ def make_handler(directory, preview_dir=None):
     results = {x["id"]: x for x in run["cameras"]}
     if len(results) != len(sources):
         raise ValueError("incomplete camera results")
-    paths = {"/": WEB / "index.html", "/app.js": WEB / "app.js", "/analytics.js": WEB / "analytics.js", "/playback.js": WEB / "playback.js", "/style.css": WEB / "style.css"}
+    paths = {"/": WEB / "index.html", "/app.js": WEB / "app.js", "/analytics.js": WEB / "analytics.js",
+             "/sync": WEB / "sync.html", "/sync.js": WEB / "sync.js",
+             "/calibrate": WEB / "calibrate.html", "/calibrate.js": WEB / "calibrate.js",
+             "/rectangle.js": WEB / "rectangle.js", "/playback.js": WEB / "playback.js", "/style.css": WEB / "style.css"}
     preview_root, previews = _load_previews(preview_dir, sources, run_sha=file_sha256(directory / "run.json"))
     revisions = {}
     cameras = []
@@ -117,7 +120,7 @@ def make_handler(directory, preview_dir=None):
                         "height": camera["video"]["height"], "codec_fourcc": camera["video"].get("codec_fourcc"),
                         "calibrated": camera["homography"] is not None,
                         "normalized_analysis_input":bool(camera.get("normalization")),
-                        "frames": info["decoded_frames"], "observations": info["observations"],
+                        "frames": info["decoded_frames"], "duration_seconds": decoded / fps, "observations": info["observations"],
                         "frame_count_matches_metadata": info.get("frame_count_matches_metadata")})
     if not cameras:
         raise ValueError("no camera results")
@@ -135,7 +138,7 @@ def make_handler(directory, preview_dir=None):
         "model": {k: run.get("model", {}).get(k) for k in ("sha256", "tracker", "confidence", "device", "image_size")},
         "versions": run.get("versions", {}), "scope": run.get("scope", ""),
         "playback_previews": [{"id":cid,"preview_sha256":item["preview_sha256"]} for cid,item in previews.items()]}
-    manifest = json.dumps({"name": run["project"].get("name", "WalkFlows"),
+    manifest = json.dumps({"review_available": True, "name": run["project"].get("name", "WalkFlows"),
                            "timeline": timeline, "scope": run.get("scope", ""),
                            "provenance": provenance, "cameras": cameras}, ensure_ascii=False).encode("utf-8")
 
@@ -178,7 +181,7 @@ def serve(directory, port, preview_dir=None):
 
 def make_calibration_handler(project, preview_dir=None):
     """Expose only project videos and a sanitized calibration interface."""
-    paths = {"/": WEB / "calibrate.html", "/calibrate.js": WEB / "calibrate.js", "/rectangle.js": WEB / "rectangle.js",
+    paths = {"/": WEB / "calibrate.html", "/calibrate": WEB / "calibrate.html", "/calibrate.js": WEB / "calibrate.js", "/rectangle.js": WEB / "rectangle.js",
              "/sync": WEB / "sync.html", "/sync.js": WEB / "sync.js", "/playback.js": WEB / "playback.js", "/style.css": WEB / "style.css"}
     cameras = []
     revisions = {}
