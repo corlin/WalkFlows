@@ -46,7 +46,7 @@ $("export").onclick=()=>{
 };
 fetch("/manifest.json").then(r=>{if(!r.ok)throw Error();return r.json();}).then(project=>{
   if(project.review_available){$("review-link").hidden=false;$("review-warning").hidden=false;}
-  $("title").textContent=project.name+" · 时间对齐";
+  $("title").textContent=(project.display_name || project.name)+" · 时间对齐";
   for(const camera of project.cameras){
     const card=document.createElement("article");card.className="card";
     const head=document.createElement("header"),name=document.createElement("h2");name.textContent=camera.id;head.append(name);

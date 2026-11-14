@@ -105,7 +105,7 @@ def main(argv=None):
     q=sub.add_parser('serve',help='serve the existing bundle on loopback');q.add_argument('--port',type=int,default=8767)
     project=sub.add_parser('project-validate',help='validate generic local video inputs without running inference');project.add_argument('--config',required=True,help='JSON camera configuration')
     run=sub.add_parser('project-run',help='run sequential per-camera detection and tracking');run.add_argument('--config',required=True);run.add_argument('--output',required=True);run.add_argument('--weights',default=str(ROOT/'data/models/yolo11n.pt'));run.add_argument('--device',default='cpu',help='CPU or CUDA device, for example cpu or 0');run.add_argument('--resume',action='store_true',help='reuse verified completed cameras in an interrupted or failed run');run.add_argument('--image-size',type=int,default=640,help='model input size, a multiple of 32');run.add_argument('--confidence',type=float,default=0.25,help='person detection confidence threshold')
-    review=sub.add_parser('project-review',help='review a completed generic run on loopback');review.add_argument('--output',required=True);review.add_argument('--port',type=int,default=8768);review.add_argument('--preview-dir',help='verified playback-copy bundle')
+    review=sub.add_parser('project-review',help='review a completed generic run on loopback');review.add_argument('--output',required=True);review.add_argument('--port',type=int,default=8768);review.add_argument('--preview-dir',help='verified playback-copy bundle');review.add_argument('--display-name',help='friendly project title without changing provenance')
     calibration=sub.add_parser('project-calibrate',help='fit a plane mapping from matching points');calibration.add_argument('--points',required=True,help='JSON with image_points and plane_points')
     checkcal=sub.add_parser('project-check-calibration',help='evaluate separately supplied check points against a camera mapping');checkcal.add_argument('--config',required=True);checkcal.add_argument('--camera',required=True);checkcal.add_argument('--points',required=True,help='JSON with independent image_points and plane_points')
     calui=sub.add_parser('project-calibration-ui',help='select calibration points from project videos');calui.add_argument('--config',required=True);calui.add_argument('--port',type=int,default=8769);calui.add_argument('--preview-dir',help='verified playback-copy bundle')
@@ -262,7 +262,7 @@ def main(argv=None):
         print(json.dumps(result,indent=2));return 0
     if args.command=='project-review':
         from walkflows.multicamera_review import serve as serve_project
-        try:serve_project(args.output,args.port,preview_dir=args.preview_dir)
+        try:serve_project(args.output,args.port,preview_dir=args.preview_dir,display_name=args.display_name)
         except (ValueError,OSError,KeyError) as error:print('Cannot review project: '+str(error),file=sys.stderr);return 1
         return 0
     if args.command=='project-run':

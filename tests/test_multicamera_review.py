@@ -57,13 +57,15 @@ class ReviewTest(unittest.TestCase):
                 "cameras": [{"id": "a", "status": "completed", "decoded_frames": 5,
                              "observations": 1, "observations_sha256": file_sha256(root / "a.csv")}]}
             (root / "run.json").write_text(json.dumps(data))
-            server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(root))
+            server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(root, display_name="示例店铺"))
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
             base = "http://127.0.0.1:" + str(server.server_port)
             try:
                 manifest = json.load(urllib.request.urlopen(base + "/manifest.json"))
                 self.assertTrue(manifest["review_available"])
+                self.assertEqual(manifest["name"], "test")
+                self.assertEqual(manifest["display_name"], "示例店铺")
                 self.assertEqual(manifest["cameras"][0]["duration_seconds"], 1.0)
                 for route in ("/sync", "/calibrate", "/sync.js", "/calibrate.js", "/rectangle.js"):
                     with urllib.request.urlopen(base + route) as response:

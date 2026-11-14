@@ -346,7 +346,7 @@ async function start() {
 }
 async function init() {
   const response = await fetch("/manifest.json"); if (!response.ok) throw Error("无法读取项目");
-  manifest = await response.json(); $("title").textContent = manifest.name;
+  manifest = await response.json(); $("title").textContent = manifest.display_name || manifest.name;
   $("scope").textContent = "本地处理结果 · 仅显示逐镜观察";
   $("seek").min = manifest.timeline.start_seconds; $("seek").max = manifest.timeline.end_seconds;
   for (const camera of manifest.cameras) {

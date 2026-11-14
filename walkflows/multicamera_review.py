@@ -70,7 +70,7 @@ def _calibration_provenance(camera):
     return safe or None
 
 
-def make_handler(directory, preview_dir=None):
+def make_handler(directory, preview_dir=None, display_name=None):
     directory = Path(directory).resolve(strict=True)
     run = json.loads((directory / "run.json").read_text(encoding="utf-8"))
     if run.get("status") != "completed":
@@ -139,6 +139,7 @@ def make_handler(directory, preview_dir=None):
         "versions": run.get("versions", {}), "scope": run.get("scope", ""),
         "playback_previews": [{"id":cid,"preview_sha256":item["preview_sha256"]} for cid,item in previews.items()]}
     manifest = json.dumps({"review_available": True, "name": run["project"].get("name", "WalkFlows"),
+                           "display_name": display_name or run["project"].get("name", "WalkFlows"),
                            "timeline": timeline, "scope": run.get("scope", ""),
                            "provenance": provenance, "cameras": cameras}, ensure_ascii=False).encode("utf-8")
 
@@ -167,8 +168,8 @@ def make_handler(directory, preview_dir=None):
     return Handler
 
 
-def serve(directory, port, preview_dir=None):
-    handler = make_handler(directory, preview_dir=preview_dir)
+def serve(directory, port, preview_dir=None, display_name=None):
+    handler = make_handler(directory, preview_dir=preview_dir, display_name=display_name)
     server = ThreadingHTTPServer(("127.0.0.1", port), handler)
     print(f"WalkFlows review: http://127.0.0.1:{server.server_port}/", flush=True)
     try:
