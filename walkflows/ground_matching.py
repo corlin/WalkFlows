@@ -14,6 +14,31 @@ def _ground_mask(image, polygon):
     return mask
 
 
+
+def _region_features(image, mask, limit=4000, max_dimension=1800, padding=64):
+    """Detect inside a padded polygon crop before limiting features."""
+    x,y,w,h=cv2.boundingRect(mask)
+    x0=max(0,x-padding);y0=max(0,y-padding)
+    x1=min(image.shape[1],x+w+padding);y1=min(image.shape[0],y+h+padding)
+    roi=image[y0:y1,x0:x1];region_mask=mask[y0:y1,x0:x1]
+    ratio=min(1.0,max_dimension/max(roi.shape[:2]))
+    if ratio<1.0:
+        size=(max(1,round(roi.shape[1]*ratio)),max(1,round(roi.shape[0]*ratio)))
+        roi=cv2.resize(roi,size,interpolation=cv2.INTER_AREA)
+        region_mask=cv2.resize(region_mask,size,interpolation=cv2.INTER_NEAREST)
+    sx=(x1-x0)/roi.shape[1];sy=(y1-y0)/roi.shape[0]
+    detector=cv2.SIFT_create(nfeatures=0,contrastThreshold=.02)
+    keypoints,descriptors=detector.detectAndCompute(roi,region_mask)
+    if descriptors is None:return [],None
+    order=sorted(range(len(keypoints)),key=lambda i:keypoints[i].response,reverse=True)[:limit]
+    result=[]
+    for i in order:
+        point=keypoints[i]
+        point.pt=(point.pt[0]*sx+x0,point.pt[1]*sy+y0)
+        result.append(point)
+    return result,descriptors[order]
+
+
 def suggest_ground_matches(reference, target, reference_polygon, target_polygon, max_matches=40):
     if reference.ndim not in (2,3) or target.ndim not in (2,3) or not 4<=max_matches<=100:
         raise ValueError("invalid images or match limit")
@@ -21,9 +46,8 @@ def suggest_ground_matches(reference, target, reference_polygon, target_polygon,
     tgtmask=_ground_mask(target,target_polygon)
     ref=cv2.cvtColor(reference,cv2.COLOR_BGR2GRAY) if reference.ndim==3 else reference
     tgt=cv2.cvtColor(target,cv2.COLOR_BGR2GRAY) if target.ndim==3 else target
-    detector=cv2.SIFT_create(nfeatures=4000)
-    rk,rd=detector.detectAndCompute(ref,refmask)
-    tk,td=detector.detectAndCompute(tgt,tgtmask)
+    rk,rd=_region_features(ref,refmask)
+    tk,td=_region_features(tgt,tgtmask)
     result={"status":"insufficient_features","reference_features":len(rk),
             "target_features":len(tk),"matches":[],"inliers":0,
             "scope":"Unverified candidate correspondences; do not assume points lie on ground or share metric coordinates."}

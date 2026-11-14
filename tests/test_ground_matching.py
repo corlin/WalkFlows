@@ -19,6 +19,21 @@ class GroundMatchingTest(unittest.TestCase):
             self.assertAlmostEqual(u-x,12,delta=2)
             self.assertAlmostEqual(v-y,8,delta=2)
 
+    def test_textured_background_does_not_starve_marked_region(self):
+        rng=np.random.default_rng(501)
+        image=rng.integers(0,256,(900,1600),np.uint8)
+        x,y,w,h=400,250,340,260
+        patch=rng.integers(0,256,(h,w),np.uint8)
+        image[y:y+h,x:x+w]=cv2.GaussianBlur(patch,(7,7),1.5)
+        shifted=cv2.warpAffine(image,np.float32([[1,0,10],[0,1,7]]),(1600,900))
+        polygon=[[x,y],[x+w-1,y],[x+w-1,y+h-1],[x,y+h-1]]
+        result=suggest_ground_matches(image,shifted,polygon,polygon)
+        self.assertEqual(result["status"],"candidates")
+        self.assertGreaterEqual(len(result["matches"]),4)
+        for pair in result["matches"]:
+            self.assertAlmostEqual(pair["target"][0]-pair["reference"][0],10,delta=2)
+            self.assertAlmostEqual(pair["target"][1]-pair["reference"][1],7,delta=2)
+
     def test_local_endpoint_returns_candidates_and_rejects_cross_origin(self):
         import json
         import tempfile

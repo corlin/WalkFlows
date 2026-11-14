@@ -74,7 +74,8 @@ $("match-find").onclick=async()=>{
     const result=await response.json();
     if(JSON.stringify(matchingInputs())!==snapshot)throw Error("相机、时间或标注已变化，请重新寻找。");
     if(result.status!=="candidates" || result.matches.length<4){
-      $("match-status").textContent="未找到足够的候选（"+result.status+"），请检查地面重叠、纹理或画面时间。";return;
+      const counts="区域内特征 "+result.reference_features+" / "+result.target_features+"，初始匹配 "+(result.tentative_matches||0)+"，几何内点 "+(result.inliers||0)+"。";
+      $("match-status").textContent="暂未产生足够候选（"+result.status+"）。"+counts+" 两个画面有重叠也可能因纹理、遮挡、视角变化或算法限制而失败；可调整区域或画面时间后重试。";return;
     }
     groundSuggestions=result;matchSnapshot=snapshot;
     const mode=result.plane_mode==="reference_image"?"参考画面像素相对坐标，非米制":"参考相机已有坐标";
